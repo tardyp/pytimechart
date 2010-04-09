@@ -1,0 +1,10 @@
+# tracer: nop
+#
+#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+#              | |       |          |         |
+          <idle>-0     [002]  1121.356358: power_end: dummy=65535
+          <idle>-0     [006]  1121.356358: power_end: dummy=65535
+          <idle>-0     [002]  1121.356364: power_start: type=1 state=3
+          <idle>-0     [006]  1121.356365: sched_switch: task swapper:0 [140] (R) ==> start_trace.sh:2990 [140]
+  start_trace.sh-2988  [005]  1121.356381: sched_switch: task start_trace.sh:2988 [140] (S) ==> swapper:0 [140]
+          <idle>-0     [005]  1121.356388: power_start: type=1 state=3
