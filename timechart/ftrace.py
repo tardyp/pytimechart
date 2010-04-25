@@ -12,13 +12,22 @@ events_desc = [
     ('sched_switch',  'task %s:%d [%d] ==> %s:%d [%d]',
      'prev_comm', 'prev_pid', 'prev_prio'  ,
      'next_comm', 'next_pid', 'next_prio'),
+    ('sched_switch',  'prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s ==> next_comm=%s next_pid=%d next_prio=%d',
+     'prev_comm', 'prev_pid', 'prev_prio'  , 'prev_state',
+     'next_comm', 'next_pid', 'next_prio'),
     ('sched_wakeup','task %s:%d [%d] success=%d [%d]','wakee_comm', 'wakee_pid', 'wakee_prio', 'success', 'wakee_cpu'),
     ('sched_wakeup','task %s:%d [%d] success=%d','wakee_comm', 'wakee_pid', 'wakee_prio', 'success'),
+    ('sched_wakeup','comm=%s pid=%d prio=%d success=%d target_cpu=%d','wakee_comm', 'wakee_pid', 'wakee_prio', 'success', 'wakee_cpu'),
     ('softirq_entry','softirq=%d action=%s','irq','handler'),
     ('softirq_exit','softirq=%d action=%s','irq','handler'),
+    ('softirq_entry','vec=%d [action=%s]','irq','handler'),
+    ('softirq_exit','vec=%d [action=%s]','irq','handler'),
     ('irq_handler_entry', 'irq=%d handler=%s','irq','handler'),
+    ('irq_handler_entry', 'irq=%d name=%s','irq','handler'),
     ('irq_handler_exit', 'irq=%d return=%s','irq','return'),
-    ('workqueue_execution','thread=%s func=%s\\+%s/%s','thread','func','func_offset','func_size')
+    ('irq_handler_exit', 'irq=%d ret=%s','irq','return'),
+    ('workqueue_execution','thread=%s func=%s\\+%s/%s','thread','func','func_offset','func_size'),
+    ('workqueue_execution','thread=%s func=%s','thread','func')
     ]
 
 # pre process our descriptions to transform it into re
