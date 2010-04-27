@@ -120,17 +120,16 @@ class TimeChartPlot(BarPlot):
         self.request_redraw()
 
 
-    def _gather_timechart_points(self,tc,y):
-        low_i = searchsorted(tc.end_ts,self.index_mapper.range.low)
-        high_i = searchsorted(tc.start_ts,self.index_mapper.range.high)
-        
+    def _gather_timechart_points(self,start_ts,end_ts,y,step):
+        low_i = searchsorted(end_ts,self.index_mapper.range.low)
+        high_i = searchsorted(start_ts,self.index_mapper.range.high)
         if low_i==high_i:
             return array([])
 
-        start_ts = tc.start_ts[low_i:high_i]
-        end_ts = tc.end_ts[low_i:high_i]
+        start_ts = start_ts[low_i:high_i]
+        end_ts = end_ts[low_i:high_i]
         points = column_stack((start_ts,end_ts,
-                               zeros(high_i-low_i)+(y+.2), ones(high_i-low_i)+(y-.2),array(range(low_i,high_i))))
+                               zeros(high_i-low_i)+(y+step), ones(high_i-low_i)+(y-step),array(range(low_i,high_i))))
         return points
     def _draw_label(self,gc,label,text,x,y):
         label.text = text
@@ -140,16 +139,17 @@ class TimeChartPlot(BarPlot):
         label.draw(gc)
         gc.translate_ctm(*(-offset))
         return l_w,l_h
-    def _draw_timechart(self,gc,tc,label,y,fill_colors):
-        bar_middle_y = self.first_bar_y+(y+.5)*self.bar_height
+    def _draw_timechart(self,gc,tc,label,base_y,fill_colors):
+        
+        bar_middle_y = self.first_bar_y+(base_y+.5)*self.bar_height
         if bar_middle_y+self.bar_height < self.y or bar_middle_y-self.bar_height>self.y+self.height:
             return 1 #quickly decide we are not on the screen
-        points = self._gather_timechart_points(tc,y)
+        points = self._gather_timechart_points(tc.start_ts,tc.end_ts,base_y,.2)
         if self.options.remove_pids_not_on_screen and points.size == 0:
             return 0
         # we are too short in height, dont display all the labels
         if self.last_label >= bar_middle_y:
-            self._draw_bg(gc,y,tc.bg_color)
+            self._draw_bg(gc,base_y,tc.bg_color)
             # draw label
             l_w,l_h = self._draw_label(gc,label,tc.name,self.x,bar_middle_y)
             self.last_label = bar_middle_y-(l_h*2/3)
@@ -175,35 +175,50 @@ class TimeChartPlot(BarPlot):
                 rects=column_stack((lower_left_pts, bounds))
                 gc.rects(rects)
                 gc.draw_path()
-                return 1
-            # lets display them more nicely
-            rects=column_stack((lower_left_pts, bounds,points[:,(4)]))
-            last_t = -1
-            gc.save_state()
-            for x,y,sx,sy,i in rects:
-                t = tc.types[i]
-                
-                if last_t != t:
-                    # only draw when we change color. agg will then simplify the path
-                    # note that a path only can only have one color in agg.
-                    gc.draw_path()
-                    if len(fill_colors)>t:
-                        gc.set_fill_color(fill_colors[int(t)])
-                    last_t = t
-                gc.rect(x,y,sx,sy)
-            # draw last path
-            gc.draw_path()
-            if tc.has_comments:
+            else:
+                # lets display them more nicely
+                rects=column_stack((lower_left_pts, bounds,points[:,(4)]))
+                last_t = -1
+                gc.save_state()
                 for x,y,sx,sy,i in rects:
-                    if sx<8: # not worth calculatig text size
-                        continue
-                    label.text = tc.get_comment(i)
-                    l_w,l_h = label.get_width_height(gc)
-                    if l_w < sx:
-                        offset = array((x,y+self.bar_height*.6/2-l_h/2))
-                        gc.translate_ctm(*offset)
-                        label.draw(gc)
-                        gc.translate_ctm(*(-offset))
+                    t = tc.types[i]
+
+                    if last_t != t:
+                        # only draw when we change color. agg will then simplify the path
+                        # note that a path only can only have one color in agg.
+                        gc.draw_path()
+                        if len(fill_colors)>t:
+                            gc.set_fill_color(fill_colors[int(t)])
+                        last_t = t
+                    gc.rect(x,y,sx,sy)
+                # draw last path
+                gc.draw_path()
+                if tc.has_comments:
+                    for x,y,sx,sy,i in rects:
+                        if sx<8: # not worth calculatig text size
+                            continue
+                        label.text = tc.get_comment(i)
+                        l_w,l_h = label.get_width_height(gc)
+                        if l_w < sx:
+                            offset = array((x,y+self.bar_height*.6/2-l_h/2))
+                            gc.translate_ctm(*offset)
+                            label.draw(gc)
+                            gc.translate_ctm(*(-offset))
+            if tc.max_latency > 0: # emphase events where max_latency is reached
+                ts = tc.max_latency_ts
+                if ts.size>0:
+                    points = self._gather_timechart_points(ts,ts,base_y,0)
+                    if points.size>0:
+                        # map the bars start and stop locations into screen space
+                        gc.set_alpha(1)
+                        lower_left_pts = self.map_screen(points[:,(0,2)]) 
+                        upper_right_pts = self.map_screen(points[:,(1,3)])
+                        bounds = upper_right_pts - lower_left_pts
+                        rects=column_stack((lower_left_pts, bounds))
+                        gc.rects(rects)
+                        gc.draw_path()
+                
+                    
         return 1
             
     def _draw_freqchart(self,gc,tc,label,y):

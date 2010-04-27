@@ -31,6 +31,9 @@ class Timechart(HasTraits):
     total_time = Property(Int)
     max_types = Property(Int)
     bg_color = Property(ColorTrait)
+    max_latency = Property(Int)
+    max_latency_ts = Property(CArray)
+    
     @cached_property
     def _get_total_time(self):
         return sum(self.end_ts-self.start_ts)
@@ -56,7 +59,9 @@ class Timechart(HasTraits):
         self.types = types
     def get_comment(self,i):
         return "%d"%(self.types[i])
-
+    @cached_property
+    def _get_max_latency(self):
+        return -1
 class Process(Timechart):
     name = Property(String) # overide TimeChart
     # start_ts=CArray # inherited from TimeChart
@@ -87,13 +92,26 @@ class Process(Timechart):
         else:
             return ""
     @cached_property
+    def _get_max_latency(self):
+        if self.pid==0 and self.comm.startswith("irq"):
+            return 1000
+
+    @cached_property
+    def _get_max_latency_ts(self):
+        if self.max_latency > 0:
+            indices = np.nonzero((self.end_ts - self.start_ts) > self.max_latency)[0]
+            print indices
+            return np.array(sorted(map(lambda i:self.start_ts[i], indices)))
+        return []
+                                
+        
+    @cached_property
     def _get_bg_color(self):
+        if self.max_latency >0 and max(self.end_ts - self.start_ts)>self.max_latency:
+            return (1,.1,.1,1)
         if self.pid==0:
             if self.comm.startswith("irq"):
-                if max(self.end_ts - self.start_ts)>1000:# irq > 1ms!!!
-                    return (1,.1,.1,1)
-                else:
-                    return (.9,1,.9,1)
+                return (.9,1,.9,1)
             if self.comm.startswith("softirq"):
                 return (.7,1,.7,1)
             if self.comm.startswith("work"):
