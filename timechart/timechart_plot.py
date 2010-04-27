@@ -147,15 +147,21 @@ class TimeChartPlot(BarPlot):
         points = self._gather_timechart_points(tc,y)
         if self.options.remove_pids_not_on_screen and points.size == 0:
             return 0
-        self._draw_bg(gc,y,tc.bg_color)
-        # draw label
-        l_w,l_h = self._draw_label(gc,label,tc.name,self.x,bar_middle_y)
+        # we are too short in height, dont display all the labels
+        if self.last_label >= bar_middle_y:
+            self._draw_bg(gc,y,tc.bg_color)
+            # draw label
+            l_w,l_h = self._draw_label(gc,label,tc.name,self.x,bar_middle_y)
+            self.last_label = bar_middle_y-(l_h*2/3)
+        else:
+            l_w,l_h = 0,0 
         if points.size != 0:
             # draw the middle line from end of label to end of screen
-            gc.set_alpha(0.2)
-            gc.move_to(self.x+l_w,bar_middle_y)
-            gc.line_to(self.x+self.width,bar_middle_y)
-            gc.draw_path()
+            if l_w != 0: # we did not draw label because too short on space
+                gc.set_alpha(0.2)
+                gc.move_to(self.x+l_w,bar_middle_y)
+                gc.line_to(self.x+self.width,bar_middle_y)
+                gc.draw_path()
             gc.set_alpha(0.5)
             # map the bars start and stop locations into screen space
             lower_left_pts = self.map_screen(points[:,(0,2)])
@@ -280,6 +286,7 @@ class TimeChartPlot(BarPlot):
         gc.set_stroke_color(self.line_color_)
         gc.set_line_width(self.line_width)
         self.first_bar_y = self.map_screen(array((0,0)))[1]
+        self.last_label = self.height
         self.bar_height = self.map_screen(array((0,1)))[1]-self.first_bar_y
         self.max_y = y = self.proj.num_cpu*2+self.proj.num_process-1
         if self.bar_height>15:
