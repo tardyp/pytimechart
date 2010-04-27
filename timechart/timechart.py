@@ -147,7 +147,12 @@ class TimechartProject(HasTraits):
             tc = self.tmp_c_states[event.cpu]
             if len(tc['start_ts'])>len(tc['end_ts']):
                 tc['end_ts'].append(event.timestamp)
-                print "warning: missed power_end"
+                self.missed_power_end +=1
+                if self.missed_power_end < 10:
+                    print "warning: missed power_end"
+                if self.missed_power_end == 10:
+                    print "warning: missed power_end: wont warn anymore!"
+                    
             tc['start_ts'].append(event.timestamp)
             tc['types'].append(event.state)
     def ftrace_power_end(self,event):
@@ -168,6 +173,8 @@ class TimechartProject(HasTraits):
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
             process['end_ts'].append(event.timestamp)
+
+        self.cur_process_by_pid[process['pid']] = process
         p_stack = self.cur_process[event.cpu]
         if p_stack:
             p = p_stack[-1]
@@ -192,8 +199,8 @@ class TimechartProject(HasTraits):
         p_stack = self.cur_process[event.cpu]
         if p_stack:
             p = p_stack.pop()
-            if p != process:
-                print "warning: process premption stack following failure on CPU",event.cpu, p['comm'],process['comm'],map(lambda a:a['comm'],p_stack),event.timestamp
+            if p['pid'] != process['pid']:
+                print  "warning: process premption stack following failure on CPU",event.cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
                 p_stack = []
             if p_stack:
                 p = p_stack[-1]
@@ -288,11 +295,13 @@ class TimechartProject(HasTraits):
         self.tmp_c_states = []
         self.tmp_p_states = []
         self.tmp_process = {}
+        self.cur_process_by_pid = {}
         self.wake_events = []
         self.cur_process = [None]*20
         self.last_irq={}
         self.last_spi=[]
         self.methods = {}
+        self.missed_power_end = 0
         for name in dir(self):
             method = getattr(self, name)
             if callable(method):
