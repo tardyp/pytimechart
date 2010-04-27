@@ -67,12 +67,15 @@ def parse_ftrace(filename,callback):
     function_re = re.compile(
         r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\]\s+([0-9.]+): (.*) <-(.*)')
     last_timestamp = 0
+    linenumber = 0
     for line in fid:
+        linenumber+=1
         line = line.rstrip()
         event=None
         res = event_re.match(line)
         if res:
             event = {
+                'linenumber': linenumber,
                 'comm' : res.group(1),
                 'pid' :  int(res.group(2)),
                 'cpu' : int(res.group(3)),
@@ -97,6 +100,7 @@ def parse_ftrace(filename,callback):
         res = function_re.match(line)
         if res:
             event = {
+                'linenumber': linenumber,
                 'comm' : res.group(1),
                 'pid' :  int(res.group(2)),
                 'cpu' : int(res.group(3)),
