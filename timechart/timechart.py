@@ -100,7 +100,6 @@ class Process(Timechart):
     def _get_max_latency_ts(self):
         if self.max_latency > 0:
             indices = np.nonzero((self.end_ts - self.start_ts) > self.max_latency)[0]
-            print indices
             return np.array(sorted(map(lambda i:self.start_ts[i], indices)))
         return []
                                 

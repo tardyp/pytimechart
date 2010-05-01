@@ -152,7 +152,7 @@ class TimeChartPlot(BarPlot):
             self._draw_bg(gc,base_y,tc.bg_color)
             # draw label
             l_w,l_h = self._draw_label(gc,label,tc.name,self.x,bar_middle_y)
-            self.last_label = bar_middle_y-(l_h*2/3)
+            self.last_label = bar_middle_y-12
         else:
             l_w,l_h = 0,0 
         if points.size != 0:
@@ -301,7 +301,7 @@ class TimeChartPlot(BarPlot):
         gc.set_stroke_color(self.line_color_)
         gc.set_line_width(self.line_width)
         self.first_bar_y = self.map_screen(array((0,0)))[1]
-        self.last_label = self.height
+        self.last_label = self.height+self.y
         self.bar_height = self.map_screen(array((0,1)))[1]-self.first_bar_y
         self.max_y = y = self.proj.num_cpu*2+self.proj.num_process-1
         if self.bar_height>15:
