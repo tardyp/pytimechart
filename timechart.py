@@ -1,5 +1,13 @@
 #!/usr/bin/python
 #------------------------------------------------------------------------------
+import os,sys
+
+# workaround bug in kiva's font manager that fails to find a correct default font on linux
+if os.name=="posix":
+    from  enthought.kiva.fonttools.font_manager import fontManager, FontProperties
+    font = FontProperties()
+    font.set_name("DejaVu Sans")
+    fontManager.defaultFont = fontManager.findfont(font)
 
 
 # Enthought library imports.
@@ -15,7 +23,6 @@ from enthought.traits.ui.menu import OKButton
 
 from enthought.enable.api import Component, ComponentEditor, Window
 
-import os,sys
 from enthought.pyface.api import ImageResource
 from enthought.pyface.dock.api \
     import *
