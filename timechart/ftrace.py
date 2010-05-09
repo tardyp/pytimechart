@@ -31,7 +31,7 @@ events_desc = [
     ]
 
 # pre process our descriptions to transform it into re
-events_re = []
+events_re = {}
 for event in events_desc:
     name = event[0]
     printk = event[1]
@@ -51,13 +51,16 @@ for event in events_desc:
             regex="(.*)"
         printk = printk.replace("%"+format,regex,1)
         args_l.append((arg,filt))
-    events_re.append((name,re.compile(printk),args_l))
+    if not events_re.has_key(name):
+        events_re[name] = []
+    events_re[name].append((name,re.compile(printk),args_l))
 
 # event class passed to callback, this is more convenient than passing a dictionary
 class Event:
     def __init__(self,event):
         self.__dict__=event
 
+@profile
 def parse_ftrace(filename,callback):
     fid = open(filename,"r")
 
@@ -74,26 +77,28 @@ def parse_ftrace(filename,callback):
         event=None
         res = event_re.match(line)
         if res:
+            event_name = res.group(5)
             event = {
                 'linenumber': linenumber,
                 'comm' : res.group(1),
                 'pid' :  int(res.group(2)),
                 'cpu' : int(res.group(3)),
                 'timestamp' : int(float(res.group(4))*1000000),
-                'event' : res.group(5),
+                'event' : event_name,
                 'event_arg' : res.group(6)
                 }
             if last_timestamp == event['timestamp']:
                 event['timestamp']+=1
             last_timestamp = event['timestamp']
             to_match = event['event_arg']
-            for name,regex,args in events_re:
-                res = regex.search(to_match)
-                if res:
-                    i=1
-                    for name,typ in args:
-                        event[name] = typ(res.group(i))
-                        i+=1
+            if events_re.has_key(event_name):
+                for name,regex,args in events_re[event_name]:
+                    res = regex.search(to_match)
+                    if res:
+                        i=1
+                        for name,typ in args:
+                            event[name] = typ(res.group(i))
+                            i+=1
             callback(Event(event))
             continue
 
@@ -115,7 +120,8 @@ def parse_ftrace(filename,callback):
 #### TEST ######################################################################
 if __name__ == "__main__":
     def callback(event):
-        print event.__dict__
-    parse_ftrace("trace_test.txt",callback)
+        #print event.__dict__
+        pass
+    parse_ftrace(sys.argv[1],callback)
 
 #### EOF ######################################################################
