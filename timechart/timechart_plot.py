@@ -149,11 +149,11 @@ class TimeChartPlot(BarPlot):
     def _draw_timechart(self,gc,tc,label,base_y,fill_colors):
         
         bar_middle_y = self.first_bar_y+(base_y+.5)*self.bar_height
-        if bar_middle_y+self.bar_height < self.y or bar_middle_y-self.bar_height>self.y+self.height:
-            return 1 #quickly decide we are not on the screen
         points = self._gather_timechart_points(tc.start_ts,tc.end_ts,base_y,.2)
         if self.options.remove_pids_not_on_screen and points.size == 0:
             return 0
+        if bar_middle_y+self.bar_height < self.y or bar_middle_y-self.bar_height>self.y+self.height:
+            return 1 #quickly decide we are not on the screen
         # we are too short in height, dont display all the labels
         if self.last_label >= bar_middle_y:
             self._draw_bg(gc,base_y,tc.bg_color)
