@@ -56,18 +56,17 @@ class TimeChartOptions(HasTraits):
         self.plot.invalidate()
     def _auto_zoom_y_changed(self,val):
         self.plot.value_range.high = self.plot.max_y+1
-        self.plot.value_range.low = self.plot.min_y    
+        self.plot.value_range.low = self.plot.min_y
         self.plot.invalidate_draw()
         self.plot.request_redraw()
+
 class RangeSelectionTools(HasTraits):
     time = Str
     c_states = Str
-    top_process = Str
     zoom = Button()
     traits_view = View(VGroup(
             Item('time'),
-            Item('c_states'),
-            Item('top_process'),
+            Item('c_states',style="custom"),
             Item('zoom'),
             label='Selection Infos'
             ))
@@ -88,11 +87,19 @@ class RangeSelectionTools(HasTraits):
         self.plot.range_selection.deselect()
         self.plot.invalidate_draw()
         self.plot.request_redraw()
-        
+
     def _selection_updated_delayed(self):
-        #@todo here we need to update c_states and top_process stats.
-	self.c_states= "not yet implemented"
-	self.top_process= "not yet implemented"
+        c_states_stats = self.plot.proj.c_states_stats(self.start,self.end)
+        tmp = ""
+        i=0
+        for cpu_stat in c_states_stats:
+            tmp+="cpu%d:\n"%(i)
+            i+=1
+            for cstate in sorted([i for i in cpu_stat.keys()]):
+                part = cpu_stat[cstate]
+                tmp += "C%d:%dus %02.f%%\n"%(cstate,part,part*100/(self.end-self.start))
+        self.c_states = tmp
+        self.plot.proj.process_stats(self.start,self.end)
         self._timer.Stop()
         pass
 class TimeChartPlot(BarPlot):
@@ -360,7 +367,7 @@ def create_timechart_container(project):
         if len(tc.start_ts):
             low = min(low,tc.start_ts[0])
             high = max(high,tc.end_ts[-1])
-
+    project.process_stats(low,high)
     # we have the same x_mapper/range for each plots
     index_range = DataRange1D(low=low, high=high)
     index_mapper = LinearMapper(range=index_range,domain_limit=(low,high))
@@ -386,7 +393,7 @@ def create_timechart_container(project):
     zoom = myZoomTool(component=plot, tool_mode="range", always_on=True,axis="index",drag_button=None)
     plot.tools.append(zoom)
 
-    plot.range_selection = RangeSelection(plot,resize_margin=1,left_button_selects=False)
+    plot.range_selection = RangeSelection(plot,resize_margin=1)
     plot.tools.append(plot.range_selection)
     plot.overlays.append(RangeSelectionOverlay(component=plot,axis="index",use_backbuffer=True))
 
@@ -394,5 +401,4 @@ def create_timechart_container(project):
     plot.underlays.append(axe)
     plot.options.connect(plot)
     plot.range_tools.connect(plot)
-
     return plot

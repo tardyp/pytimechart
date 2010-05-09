@@ -5,8 +5,10 @@ from numpy import amin, amax, arange, searchsorted, sin, pi, linspace
 import numpy as np
 from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
     DelegatesTo,Int,Enum,Color,List,Bool,CArray,Property, cached_property, String
-from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup
+from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
 from enthought.enable.colors import ColorTrait
+from enthought.traits.ui.table_column \
+    import ObjectColumn, ExpressionColumn
 
 import cPickle
 import random
@@ -62,6 +64,20 @@ class Timechart(HasTraits):
     @cached_property
     def _get_max_latency(self):
         return -1
+    def get_partial_tables(self,start,end):
+        low_i = searchsorted(self.end_ts,start)
+        high_i = searchsorted(self.start_ts,end)
+        ends = self.end_ts[low_i:high_i].copy()
+        starts = self.start_ts[low_i:high_i].copy()
+        if len(starts)==0:
+            return np.array([]),np.array([]),[]
+        # take care of activities crossing the selection
+        if starts[0]<start:
+            starts[0] = start
+        if ends[-1]>end:
+            ends[-1] = end
+        types = self.types[low_i:high_i]
+        return starts,ends,types
 class Process(Timechart):
     name = Property(String) # overide TimeChart
     # start_ts=CArray # inherited from TimeChart
@@ -69,10 +85,13 @@ class Process(Timechart):
     # values = CArray   # inherited from TimeChart
     pid = Int
     ppid = Int
+    selection_time = Int(0)
+    selection_pc = Float(0)
     comm = String
     cpus = CArray
     comments = CArray
     has_comments = Bool(True)
+    show = Bool(True)
     project = None
     @cached_property
     def _get_name(self):
@@ -102,8 +121,7 @@ class Process(Timechart):
             indices = np.nonzero((self.end_ts - self.start_ts) > self.max_latency)[0]
             return np.array(sorted(map(lambda i:self.start_ts[i], indices)))
         return []
-                                
-        
+
     @cached_property
     def _get_bg_color(self):
         if self.max_latency >0 and max(self.end_ts - self.start_ts)>self.max_latency:
@@ -118,15 +136,39 @@ class Process(Timechart):
             return (.3,1,.3,1)
         else:
             return (.9,.9,1,1)
-    
-class TimechartProject(HasTraits):
 
+
+# The definition of the process TableEditor:
+process_table_editor = TableEditor(
+    columns = [ 
+                ObjectColumn( name = 'comm',  width = 0.45 ,editable=False),
+                ObjectColumn( name = 'pid',  width = 0.10  ,editable=False),
+                ObjectColumn( name = 'selection_time',label="stime",  width = 0.20  ,editable=False),
+                ExpressionColumn( 
+                    label = 'stime%', 
+                    width = 0.20,
+                    expression = "'%.2f' % (object.selection_pc)" )
+                ],
+    deletable   = False,
+    sort_model  = False,
+    auto_size   = False,
+    orientation = 'vertical',
+    show_toolbar = False
+    )
+
+class TimechartProject(HasTraits):
     c_states = List(Timechart)
     p_states = List(Timechart)
     processes = List(Process)
     power_event = CArray
     num_cpu = Property(Int,depends_on='c_states')
     num_process = Property(Int,depends_on='process')
+    traits_view = View( 
+        Item( 'processes',
+              show_label  = False,
+              height=40,
+              editor      = process_table_editor
+              ))
     @cached_property
     def _get_num_cpu(self):
         return len(self.c_states)
@@ -137,7 +179,7 @@ class TimechartProject(HasTraits):
         c_states = [ Timechart(name="CCPU%d"%(i)) for i in xrange(num_cpu)]
         p_states = [ Timechart(name="FCPU%d"%(i)) for i in xrange(num_cpu)]
         processes = [ Process(comm="program#%d"%(i),pid=i,ppid=i-1) for i in xrange(num_process)]
-        
+
         for i in xrange(num_cpu):
             c_states[i].random(length,6,100)
             p_states[i].random(length,1000,1000)
@@ -151,6 +193,31 @@ class TimechartProject(HasTraits):
             return self.load_tmct(filename)
         else:
             return self.load_ftrace(filename)
+######### stats part ##########
+
+    def c_states_stats(self,start,end):
+        l = []
+        for tc in self.c_states: # walk cstates per cpus
+            starts,ends,types = tc.get_partial_tables(start,end)
+            stats = {}
+            tot = 0
+            for t in np.unique(types):
+                inds = np.where(types==t)
+                time = sum(ends[inds]-starts[inds])
+                tot += time
+                stats[t] = time
+            stats[0] = (end-start)-tot
+            l.append(stats)  
+        return l
+    def process_stats(self,start,end):
+        fact = 100./(end-start)
+        for tc in self.processes:
+            starts,ends,types = tc.get_partial_tables(start,end)
+            #@todo, need to take care of running vs waiting
+            inds = np.where(types==1)
+            tot = sum(ends[inds]-starts[inds])
+            tc.selection_time = tot
+            tc.selection_pc = tot*fact
 
 ######### ftrace parsing part ##########
 

@@ -17,7 +17,7 @@ from enthought.pyface.action.api import StatusBarManager, ToolBarManager
 from enthought.pyface.action.api import Group as ActionGroup
 
 from enthought.pyface.api import SplitApplicationWindow, SplitPanel
-from enthought.traits.ui.api import Item, Group, View,spring,HGroup
+from enthought.traits.ui.api import Item, Group, View,spring,HGroup,TableEditor
 from enthought.traits.api import HasTraits,Button,Str
 from enthought.traits.ui.menu import OKButton
 
@@ -83,7 +83,6 @@ class MainWindow(ApplicationWindow):
 
         # Create an action that exits the application.
         exit_action = Action(name='exit', on_perform=self.close)
-        switch_action = Action(name='switch_control', on_perform=self.switch)
         help_action = Action(name='About', on_perform = self.show_about)
         
         # Add a menu bar.
@@ -99,21 +98,6 @@ class MainWindow(ApplicationWindow):
         return
     def open_file(self):
         self.status_bar_manager.message=open_file()
-    def switch(self):
-        if self.using_old:
-            self.using_old = False
-            self.plot =  create_timechart_container(self.proj)
-        else:
-            self.using_old = True
-            self.plot =  create_timechart_container_old(self.proj)
-        plotwindow = Window(parent=self.window,kind='panel',component = self.plot)
-        new = DockControl( name      = 'Plot',
-                         closeable = False,
-                         control   = plotwindow.control, 
-                         width=600,
-                         style     = 'horizontal' )
-        self.sizer.GetContents().replace_control(self.plot_control,new)
-        self.plot_control = new
     def on_range_changed(self,r):
         time = r[1]-r[0]
         self.status_bar_manager.message = "total view: %d.%03d %03ds %d"%(time/1000000,(time/1000)%1000,time%1000,time)
@@ -124,7 +108,7 @@ class MainWindow(ApplicationWindow):
         self.plot =  create_timechart_container(self.proj)
         options_confview = self.plot.options.edit_traits(parent=window,kind='panel',scrollable=True)
         range_tools_confview = self.plot.range_tools.edit_traits(parent=window,kind='panel',scrollable=True)
-        #project_confview = self.plot.proj.edit_traits(parent=window,kind='panel',scrollable=True)
+        project_confview = self.plot.proj.edit_traits(parent=window,kind='panel',scrollable=True)
 
         plotwindow = Window(parent=window,kind='panel',component = self.plot)
         self.plot.index_range.on_trait_change(self.on_range_changed, "updated")
@@ -143,12 +127,12 @@ class MainWindow(ApplicationWindow):
                              closeable = False,
                              control   = range_tools_confview.control, 
                              style     = 'horizontal' ),
- #               DockControl( name      = 'Plot',
- #                            closeable = False,
- #                            control   = project_confview.control, 
- #                            style     = 'horizontal' )
                              ],
-                self.plot_control
+                self.plot_control,
+                DockControl( name      = 'Plot',
+                             closeable = False,
+                             control   = project_confview.control, 
+                             style     = 'horizontal' )
                         ])
         self.sizer = sizer
         window.SetSizer( sizer )
@@ -173,7 +157,7 @@ def open_file():
     return rv
     
 # Application entry point.
-prof=0
+prof=1
 if __name__ == '__main__':
     # Create the GUI (this does NOT start the GUI event loop).
     gui = GUI()
@@ -185,7 +169,11 @@ if __name__ == '__main__':
         fn = open_file()
         if not fn:
             sys.exit(1)
-    proj.load(fn)
+    if prof:
+        import cProfile
+        cProfile.run('proj.load(fn)','timechart_load.prof')
+    else:
+        proj.load(fn)
     # Create and open the main window.
     window = MainWindow(proj = proj,size=(1024,768),title="PyTimechart:%s"%(fn))
     window.open()
