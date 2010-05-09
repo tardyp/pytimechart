@@ -157,7 +157,7 @@ def open_file():
     return rv
     
 # Application entry point.
-prof=1
+prof=0
 if __name__ == '__main__':
     # Create the GUI (this does NOT start the GUI event loop).
     gui = GUI()
