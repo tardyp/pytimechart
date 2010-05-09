@@ -29,7 +29,7 @@ class TimeChartOptions(HasTraits):
     show_wake_events = Bool(False)
     show_p_states = Bool(True)
     show_c_states = Bool(True)
-    auto_zoom_y = Button()
+    auto_zoom_y = Bool(False)
 
     proj = TimechartProject
 
@@ -43,6 +43,8 @@ class TimeChartOptions(HasTraits):
             label='Display Properties'
             ))
     def connect(self,plot):
+        self.auto_zoom_timer = timer.Timer(300,self._auto_zoom_y_delayed)
+        self.auto_zoom_timer.Stop()
         self.plot = plot
     def _minimum_time_filter_changed(self):
         self.plot.invalidate()
@@ -55,10 +57,11 @@ class TimeChartOptions(HasTraits):
     def _show_c_states_changed(self):
         self.plot.invalidate()
     def _auto_zoom_y_changed(self,val):
-        self.plot.value_range.high = self.plot.max_y+1
-        self.plot.value_range.low = self.plot.min_y
-        self.plot.invalidate_draw()
-        self.plot.request_redraw()
+        self.plot.auto_zoom_y()
+        self.auto_zoom_timer.Stop()
+    def _auto_zoom_y_delayed(self):
+        self.plot.auto_zoom_y()
+        self.auto_zoom_timer.Stop()
 
 class RangeSelectionTools(HasTraits):
     time = Str
@@ -119,13 +122,19 @@ class TimeChartPlot(BarPlot):
     title_spacing = Trait('auto', 'auto', Float)
     # The color of the title.
     title_color = ColorTrait("black")
-    
+
     options = TimeChartOptions()
     range_tools = RangeSelectionTools()
     def invalidate(self):
         self.invalidate_draw()
         self.request_redraw()
 
+    def auto_zoom_y(self):
+        if self.value_range.high != self.max_y+1 or self.value_range.low != self.min_y:
+            self.value_range.high = self.max_y+1
+            self.value_range.low = self.min_y
+            self.invalidate_draw()
+            self.request_redraw()
 
     def _gather_timechart_points(self,start_ts,end_ts,y,step):
         low_i = searchsorted(end_ts,self.index_mapper.range.low)
@@ -159,7 +168,7 @@ class TimeChartPlot(BarPlot):
             self._draw_bg(gc,base_y,tc.bg_color)
             # draw label
             l_w,l_h = self._draw_label(gc,label,tc.name,self.x,bar_middle_y)
-            self.last_label = bar_middle_y-12
+            self.last_label = bar_middle_y-8
         else:
             l_w,l_h = 0,0 
         if points.size != 0:
@@ -339,6 +348,8 @@ class TimeChartPlot(BarPlot):
             self._draw_wake_ups(gc,processes_y)
         gc.restore_state()
         self.min_y = y
+        if self.options.auto_zoom_y:
+            self.options.auto_zoom_timer.Start()
 class myZoomTool(ZoomTool):
     """ a zoom tool which change y range only when control is pressed"""
     def normal_mouse_wheel(self, event):
