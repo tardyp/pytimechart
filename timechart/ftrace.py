@@ -32,6 +32,7 @@ events_desc = [
 
 # pre process our descriptions to transform it into re
 events_re = {}
+num_func = 0
 for event in events_desc:
     name = event[0]
     printk = event[1]
@@ -40,27 +41,34 @@ for event in events_desc:
     for i in '()[]':
         printk = printk.replace(i,'\\'+i)
     # we replace %d %s by the equivalent regular expression, and keep the type in memory for later
+    i = 0
+    func = "def my_dispatch_func%d(event,group):\n"%(num_func)
     for arg in args:
         idx = printk.index('%')
         format = printk[idx+1]
         if format=='d':
             filt=int
             regex="([0-9]+)"
+            func+=" event['%s'] = int(group[%d])\n"%(arg,i)
         elif format=='s':
             filt=str
             regex="(.*)"
+            func+=" event['%s'] = group[%d]\n"%(arg,i)
         printk = printk.replace("%"+format,regex,1)
         args_l.append((arg,filt))
+        i+=1
     if not events_re.has_key(name):
         events_re[name] = []
-    events_re[name].append((name,re.compile(printk),args_l))
+    exec func
+    events_re[name].append((name,re.compile(printk),eval("my_dispatch_func%d"%num_func)))
+    num_func+=1
 
 # event class passed to callback, this is more convenient than passing a dictionary
 class Event:
     def __init__(self,event):
         self.__dict__=event
 
-@profile
+#@profile
 def parse_ftrace(filename,callback):
     fid = open(filename,"r")
 
@@ -74,31 +82,30 @@ def parse_ftrace(filename,callback):
     for line in fid:
         linenumber+=1
         line = line.rstrip()
-        event=None
         res = event_re.match(line)
         if res:
-            event_name = res.group(5)
+            groups = res.groups()
+            event_name = groups[4]
             event = {
                 'linenumber': linenumber,
-                'comm' : res.group(1),
-                'pid' :  int(res.group(2)),
-                'cpu' : int(res.group(3)),
-                'timestamp' : int(float(res.group(4))*1000000),
+                'comm' : groups[0],
+                'pid' :  int(groups[1]),
+                'cpu' : int(groups[2]),
+                'timestamp' : int(float(groups[3])*1000000),
                 'event' : event_name,
-                'event_arg' : res.group(6)
+                'event_arg' : groups[5]
                 }
             if last_timestamp == event['timestamp']:
                 event['timestamp']+=1
             last_timestamp = event['timestamp']
             to_match = event['event_arg']
-            if events_re.has_key(event_name):
-                for name,regex,args in events_re[event_name]:
+            try:
+                for name,regex,func in events_re[event_name]:
                     res = regex.search(to_match)
                     if res:
-                        i=1
-                        for name,typ in args:
-                            event[name] = typ(res.group(i))
-                            i+=1
+                        func(event,res.groups())
+            except KeyError:
+                pass
             callback(Event(event))
             continue
 
