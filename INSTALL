@@ -1,0 +1,33 @@
+
+Linux Installation
+
+There is not yet installation scripts. run the tool from the source tree.
+
+PyTimechart uses Python,wx and Chaco as its basis.
+
+PyTimechart has been tested on linux (fedora 11,ubuntu 9.10/10.04) and windows (pythonxy, EPD)
+
+Linux installation
+
+python-chaco is now working on ubuntu-10.04 (was broken on 9.10)
+sudo apt-get install python-chaco
+Manual Linux installation
+
+If distribution packages are ot working, you may need to semi manually install Chaco and its dependancies. Use easy_install
+Install Documentation at Enthought
+
+Basically, you need to make those commands work:
+yum install python-setuptools-devel libXt-devel libXtst-devel numpy scipy swig gcc-c++ wxPython
+easy_install Traits  
+easy_install TraitsGUI  
+easy_install TraitsBackendWX  
+easy_install Enable  
+easy_install Chaco  
+And resolve the dependancy problem as they happen. Please modify this wiki as you find more dependancies.
+
+Enthought also provides an commercial easy to use python distribution called EPD.
+Windows installation
+
+The easiest way is to install pythonxy
+
+Please download the installer, and then dont forget to activate ETS and wxwindows modules.
