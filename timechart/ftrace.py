@@ -67,9 +67,60 @@ for event in events_desc:
 class Event:
     def __init__(self,event):
         self.__dict__=event
+class TraceCmdEventWrapper:
+    def __init__(self,event):
+        self.tracecmd_event = event
+        self.timestamp = event.ts/1000
+        self.cpu = int(event.cpu)
+        self.pid = int(event.pid)
+        self.comm = event.comm
+        self.event = event.name
+        if self.event == "sched_wakeup":
+            self.wakee_pid = self.tracecmd_event.num_field("pid")
+            self.wakee_comm = self.tracecmd_event.str_field("comm")
+            self.wakee_prio = self.tracecmd_event.num_field("prio")
+            self.wakee_cpu = self.tracecmd_event.num_field("cpu")
+        if self.event == "sched_switch":
+            self.prev_state = { 0:'',1: 'S' , 2:'D',4:'T', 8:'t',16:'Z',32:'X',64:'x',128:'W' }[self.tracecmd_event.num_field("prev_state")]
+            self.prev_comm = self.tracecmd_event.str_field("prev_comm")
+            self.next_comm = self.tracecmd_event.str_field("next_comm")
+        if self.event == "softirq_entry" or self.event == "softirq_exit":
+            softirq_names = ["HI","TIMER","NET_TX","NET_RX","BLOCK","BLOCK_IOPOLL","TASKLET","SCHED","HRTIMER","RCU"]
+            self.irq = self.tracecmd_event.num_field("vec")
+            self.handler = softirq_names[self.irq]
+        if self.event == "irq_handler_entry":
+            self.handler = "0x%X"%(self.tracecmd_event.num_field("name"))
+        if self.event == "workqueue_execution":
+            self.func = "0x%X"%(self.tracecmd_event.num_field("func"))
+    def __getattr__(self,name):
+        return self.tracecmd_event.num_field(name)
+def load_tracecmd(filename,callback):
+    try:
+        import tracecmd
+    except ImportError:
+        raise Exception("please compile python support in trace-cmd and add trace-cmd directory into your PYTHONPATH environment variable")
+    t = tracecmd.Trace(filename)
+    # the higher level assumes events are already system sorted, but tracecmd sort them by cpus.
+    # so we have to manually sort them.
+    cpu_event_list_not_empty = t.cpus
+    events = [ t.read_event(cpu) for cpu in xrange(t.cpus)]
+    while cpu_event_list_not_empty > 0:
+        ts = 0xFFFFFFFFFFFFFFFF
+        first_cpu = 0
+        for cpu in range(0, t.cpus):
+            if events[cpu].ts < ts:
+                first_cpu = cpu
+                ts = events[cpu].ts
+        callback(TraceCmdEventWrapper(events[first_cpu]))
+        
+        events[first_cpu] = t.read_event(first_cpu)
+        if not events[first_cpu]:
+            cpu_event_list_not_empty -= 1
 
 #@profile
 def parse_ftrace(filename,callback):
+    if filename.endswith(".dat"):
+        return load_tracecmd(filename,callback)
     fid = open(filename,"r")
 
     # the base regular expressions

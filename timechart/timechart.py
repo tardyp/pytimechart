@@ -4,7 +4,7 @@
 from numpy import amin, amax, arange, searchsorted, sin, pi, linspace
 import numpy as np
 from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
-    DelegatesTo,Int,Enum,Color,List,Bool,CArray,Property, cached_property, String
+    DelegatesTo,Int,Long,Enum,Color,List,Bool,CArray,Property, cached_property, String
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
 from enthought.enable.colors import ColorTrait
 from enthought.traits.ui.table_column \
@@ -83,9 +83,9 @@ class Process(Timechart):
     # start_ts=CArray # inherited from TimeChart
     # end_ts=CArray # inherited from TimeChart
     # values = CArray   # inherited from TimeChart
-    pid = Int
-    ppid = Int
-    selection_time = Int(0)
+    pid = Long
+    ppid = Long
+    selection_time = Long(0)
     selection_pc = Float(0)
     comm = String
     cpus = CArray

@@ -72,3 +72,14 @@ Please refer to ftrace documentation to see how is working function tracing.
 First, it is neccesary to enable function tracing in menuconfig: ‘’‘CONFIG_FUNCTION_TRACER’‘’ at:
 -> Kernel hacking -> Tracers
 Here is an example of a trace configuration script that will show at the spi subsystem, and max3110 spi to rs232 driver behaviour. We allocated 50MB of buffer to allow a lot of
+
+Usage with trace-cmd from kernelshark project:
+
+sudo ./trace-cmd record -e sched:sched_wakeup -e sched:sched_switch -e workqueue:workqueue_execution -e power:* -e irq:* -o trace.dat
+
+pytimechart will open .dat files as trace-cmd file using python wrapper of trace-cmd.
+
+At the moment trace-cmd does not install its python wrapper, you need to provide path to trace-cmd
+export PYTHONPATH=/path/to/trace-cmd
+
+
