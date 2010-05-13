@@ -125,9 +125,18 @@ class TimeChartPlot(BarPlot):
 
     options = TimeChartOptions()
     range_tools = RangeSelectionTools()
+    redraw_timer = None
     def invalidate(self):
         self.invalidate_draw()
         self.request_redraw()
+
+    def request_redraw_delayed(self):
+        self.redraw_timer.Stop()
+        BarPlot.request_redraw(self)
+    def request_redraw(self):
+        if self.redraw_timer == None:
+            self.redraw_timer = timer.Timer(30,self.request_redraw_delayed)
+        self.redraw_timer.Start()
 
     def auto_zoom_y(self):
         if self.value_range.high != self.max_y+1 or self.value_range.low != self.min_y:
