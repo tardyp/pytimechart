@@ -105,7 +105,7 @@ class RangeSelectionTools(HasTraits):
         self.plot.proj.process_stats(self.start,self.end)
         self._timer.Stop()
         pass
-class TimeChartPlot(BarPlot):
+class TimechartPlot(BarPlot):
     """custom plot to draw the timechart
     probably not very 'chacotic' We draw the chart as a whole
     """
@@ -394,7 +394,7 @@ def create_timechart_container(project):
     value_range = DataRange1D(low=0, high=project.num_cpu*2+project.num_process)
     value_mapper = LinearMapper(range=value_range,domain_limit=(0,project.num_cpu*2+project.num_process))
     index = ArrayDataSource(array((low,high)), sort_order="ascending")
-    plot = TimeChartPlot(index=index,
+    plot = TimechartPlot(index=index,
                          proj=project, bgcolor="white",padding=(0,0,0,40),
                          use_backbuffer = True,
                          fill_padding = True,
