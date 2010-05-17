@@ -160,6 +160,7 @@ class TimechartProject(HasTraits):
     c_states = List(Timechart)
     p_states = List(Timechart)
     processes = List(Process)
+    filename = Str("")
     power_event = CArray
     num_cpu = Property(Int,depends_on='c_states')
     num_process = Property(Int,depends_on='process')
@@ -189,6 +190,7 @@ class TimechartProject(HasTraits):
         self.p_states = p_states
         self.processes = processes
     def load(self,filename):
+        self.filename = filename
         if filename.endswith(".tmct"):
             return self.load_tmct(filename)
         else:
@@ -216,35 +218,13 @@ class TimechartProject(HasTraits):
             #@todo, need to take care of running vs waiting
             inds = np.where(types==1)
             tot = sum(ends[inds]-starts[inds])
-            tc.selection_time = tot
+            tc.selection_time = int(tot)
             tc.selection_pc = tot*fact
 
-######### ftrace parsing part ##########
+######### generic parsing part ##########
 
-    def ftrace_power_frequency(self,event):
-        if event.type==2:# p_state
-            tc = self.tmp_p_states[event.cpu]
-            tc['start_ts'].append(event.timestamp)
-            tc['types'].append(event.state)
-    def ftrace_power_start(self,event):
-        if event.type==1:# c_state
-            tc = self.tmp_c_states[event.cpu]
-            if len(tc['start_ts'])>len(tc['end_ts']):
-                tc['end_ts'].append(event.timestamp)
-                self.missed_power_end +=1
-                if self.missed_power_end < 10:
-                    print "warning: missed power_end"
-                if self.missed_power_end == 10:
-                    print "warning: missed power_end: wont warn anymore!"
-                    
-            tc['start_ts'].append(event.timestamp)
-            tc['types'].append(event.state)
-    def ftrace_power_end(self,event):
-        tc = self.tmp_c_states[event.cpu]
-        if len(tc['start_ts'])>len(tc['end_ts']):
-            tc['end_ts'].append(event.timestamp)
 
-    def ftrace_find_process(self,pid,comm):
+    def generic_find_process(self,pid,comm):
         if self.tmp_process.has_key((pid,comm)):
             return self.tmp_process[(pid,comm)]
         tmp = {'comm':comm,'pid':pid,'start_ts':[],'end_ts':[],'types':[],'cpus':[],'comments':[]}
@@ -252,7 +232,7 @@ class TimechartProject(HasTraits):
             self.tmp_process[(pid,comm)] = tmp
         return tmp
 
-    def ftrace_process_start(self,process,event):
+    def generic_process_start(self,process,event):
         if process['comm']=='swapper' and process['pid']==0:
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
@@ -265,7 +245,7 @@ class TimechartProject(HasTraits):
             if len(p['start_ts'])>len(p['end_ts']):
                 p['end_ts'].append(event.timestamp)
             # mark old process to wait for cpu 
-            p['start_ts'].append(event.timestamp)
+            p['start_ts'].append(int(event.timestamp))
             p['types'].append(2) 
             p['cpus'].append(event.cpu)
             p_stack.append(process)
@@ -275,7 +255,8 @@ class TimechartProject(HasTraits):
         process['start_ts'].append(event.timestamp)
         process['types'].append(1) 
         process['cpus'].append(event.cpu)
-    def ftrace_process_end(self,process,event):
+
+    def generic_process_end(self,process,event):
         if process['comm']=='swapper' and process['pid']==0:
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
@@ -295,87 +276,99 @@ class TimechartProject(HasTraits):
                 p['types'].append(1)
                 p['cpus'].append(event.cpu)
         
-    def ftrace_sched_switch(self,event):
-        prev = self.ftrace_find_process(event.prev_pid,event.prev_comm)
-        next = self.ftrace_find_process(event.next_pid,event.next_comm)
+    def do_event_sched_switch(self,event):
+        prev = self.generic_find_process(event.prev_pid,event.prev_comm)
+        next = self.generic_find_process(event.next_pid,event.next_comm)
 
-        self.ftrace_process_end(prev,event)
+        self.generic_process_end(prev,event)
 
         if event.__dict__.has_key('prev_state') and event.prev_state == 'R':# mark prev to be waiting for cpu
             prev['start_ts'].append(event.timestamp)
             prev['types'].append(2) 
             prev['cpus'].append(event.cpu)
 
-        self.ftrace_process_start(next,event)
+        self.generic_process_start(next,event)
         
-    def ftrace_sched_wakeup(self,event):
+    def do_event_sched_wakeup(self,event):
         p_stack = self.cur_process[event.cpu]
         if p_stack:
             p = p_stack[-1]
             self.wake_events.append(((p['comm'],p['pid']),(event.wakee_comm,event.wakee_pid),event.timestamp))
         else:
             self.wake_events.append(((event.comm,event.pid),event.wakee_pid,event.timestamp))
-    def ftrace_irq_handler_entry(self,event,soft=""):
-        process = self.ftrace_find_process(0,"%sirq%d:%s"%(soft,event.irq,event.handler))
+    def do_event_irq_handler_entry(self,event,soft=""):
+        process = self.generic_find_process(0,"%sirq%d:%s"%(soft,event.irq,event.handler))
         self.last_irq[(event.irq,soft)] = process
-        self.ftrace_process_start(process,event)
-    def ftrace_irq_handler_exit(self,event,soft=""):
+        self.generic_process_start(process,event)
+    def do_event_irq_handler_exit(self,event,soft=""):
         try:
             process = self.last_irq[(event.irq,soft)]
         except KeyError:
             print "error did not find last irq"
             print self.last_irq.keys(),(event.irq,soft)
             return
-        self.ftrace_process_end(process,event)
-    def ftrace_softirq_entry(self,event):
-        return self.ftrace_irq_handler_entry(event,"soft")
-    def ftrace_softirq_exit(self,event):
-        return self.ftrace_irq_handler_exit(event,"soft")
+        self.generic_process_end(process,event)
+    def do_event_softirq_entry(self,event):
+        return self.do_event_irq_handler_entry(event,"soft")
+    def do_event_softirq_exit(self,event):
+        return self.do_event_irq_handler_exit(event,"soft")
         
-    def ftrace_spi_sync(self,event):
-        process = self.ftrace_find_process(0,"spi:%s"%(event.caller))
+    def do_event_spi_sync(self,event):
+        process = self.generic_find_process(0,"spi:%s"%(event.caller))
         self.last_spi.append(process)
-        self.ftrace_process_start(process,event)
-    def ftrace_spi_complete(self,event):
+        self.generic_process_start(process,event)
+    def do_event_spi_complete(self,event):
         process = self.last_spi.pop(0)
-        self.ftrace_process_end(process,event)
-    def ftrace_spi_async(self,event):
+        self.generic_process_end(process,event)
+    def do_event_spi_async(self,event):
         if event.caller != 'spi_sync':
-            self.ftrace_spi_sync(event)
-    def ftrace_workqueue_execution(self,event):
-        process = self.ftrace_find_process(0,"work:%s"%(event.func))
-        self.ftrace_process_start(process,event)
-        self.ftrace_process_end(process,event)
+            self.do_event_spi_sync(event)
+    def do_event_workqueue_execution(self,event):
+        process = self.generic_find_process(0,"work:%s"%(event.func))
+        self.generic_process_start(process,event)
+        self.generic_process_end(process,event)
         
-    def ftrace_function_default(self,event):
-        process = self.ftrace_find_process(0,"kernel function:%s"%(event.callee))
-        self.ftrace_process_start(process,event)
-        self.ftrace_process_end(process,event)
-    def ftrace_event_default(self,event):
-        process = self.ftrace_find_process(0,"event:%s"%(event.event))
-        self.ftrace_process_start(process,event)
-        self.ftrace_process_end(process,event)
+    def do_event_power_frequency(self,event):
+        self.ensure_cpu_allocated(event.cpu)
+        if event.type==2:# p_state
+            tc = self.tmp_p_states[event.cpu]
+            tc['start_ts'].append(event.timestamp)
+            tc['types'].append(event.state)
 
-    def ftrace_callback(self,event):
-        # ensure we have enough per_cpu p/s_states timecharts
-        while len(self.tmp_c_states)<=event.cpu:
-            self.tmp_c_states.append({'start_ts':[],'end_ts':[],'types':[]})
-        while len(self.tmp_p_states)<=event.cpu:
-            self.tmp_p_states.append({'start_ts':[],'end_ts':[],'types':[]})
+    def do_event_power_start(self,event):
+        self.ensure_cpu_allocated(event.cpu)
+        if event.type==1:# c_state
+            tc = self.tmp_c_states[event.cpu]
+            if len(tc['start_ts'])>len(tc['end_ts']):
+                tc['end_ts'].append(event.timestamp)
+                self.missed_power_end +=1
+                if self.missed_power_end < 10:
+                    print "warning: missed power_end"
+                if self.missed_power_end == 10:
+                    print "warning: missed power_end: wont warn anymore!"
+                    
+            tc['start_ts'].append(event.timestamp)
+            tc['types'].append(event.state)
+
+    def do_event_power_end(self,event):
+        self.ensure_cpu_allocated(event.cpu)
+
+        tc = self.tmp_c_states[event.cpu]
+        if len(tc['start_ts'])>len(tc['end_ts']):
+            tc['end_ts'].append(event.timestamp)
+
+    def do_event_function_default(self,event):
+        process = self.generic_find_process(0,"kernel function:%s"%(event.callee))
+        self.generic_process_start(process,event)
+        self.generic_process_end(process,event)
+
+    def do_event_event_default(self,event):
+        process = self.generic_find_process(0,"event:%s"%(event.event))
+        self.generic_process_start(process,event)
+        self.generic_process_end(process,event)
 
 
-        callback = "ftrace_"+event.event
-        if event.event=='function':
-            callback = "ftrace_"+event.callee
-        if self.methods.has_key(callback):
-            self.methods[callback](event)
-        elif event.event=='function':
-            self.ftrace_function_default(event)
-        else:
-            self.ftrace_event_default(event)
-
-    def load_ftrace(self,filename):
-        from ftrace import parse_ftrace
+    def start_parsing(self):
         self.tmp_c_states = []
         self.tmp_p_states = []
         self.tmp_process = {}
@@ -384,14 +377,9 @@ class TimechartProject(HasTraits):
         self.cur_process = [None]*20
         self.last_irq={}
         self.last_spi=[]
-        self.methods = {}
         self.missed_power_end = 0
-        for name in dir(self):
-            method = getattr(self, name)
-            if callable(method):
-                self.methods[name] = method
-        parse_ftrace(filename,self.ftrace_callback)
-        
+
+    def finish_parsing(self):
         #put generated data in unresizable numpy format
         c_states = []
         i=0
@@ -435,64 +423,35 @@ class TimechartProject(HasTraits):
         self.tmp_c_states = []
         self.tmp_p_states = []
         self.tmp_process = {}
+    def ensure_cpu_allocated(self,cpu):
+        # ensure we have enough per_cpu p/s_states timecharts
+        while len(self.tmp_c_states)<=cpu:
+            self.tmp_c_states.append({'start_ts':[],'end_ts':[],'types':[]})
+        while len(self.tmp_p_states)<=cpu:
+            self.tmp_p_states.append({'start_ts':[],'end_ts':[],'types':[]})
+                                     
+######### ftrace specific parsing part ##########
         
+    def ftrace_callback(self,event):
+                                         
 
-########## tmct parsing part ##########
-# job is done by perf buildin-timechart
-# just fits the data our prefered way
-    def load_tmct(self,filename):
-        f = open(filename)
-        numcpus = read_u64(f,1)
-        self.first_time = read_u64(f,1)
-        self.last_time = read_u64(f,1)
-        process_list = []
-        n_samples = read_u64(f,1)
-        comms_dict = {}
-        while n_samples < 0xffffffff:
-            pid = int(read_u64(f,1))
-            ppid = int(read_u64(f,1))
-            comm = f.read(256)
-            comm = comm[:comm.index('\0')]
-            samples = read_u64_struct(f,n_samples,['start_ts','end_ts','types','cpu'])
-            if n_samples>0:
-                samples.sort(axis=0,order=['start_ts'])
-                comms_dict[pid] = comm # @todo, a pid can have several comms
-                process = Process(project = self,
-                                  pid=pid,
-                                  ppid=ppid,
-                                  comm=comm,
-                                  start_ts=samples['start_ts'],
-                                  end_ts=samples['end_ts'],
-                                  types=samples['types'],
-                                  cpus= samples['cpu'])
-                process_list.append(process)
-            n_samples = read_u64(f,1)
-        self.processes = process_list
-        n_samples = read_u64(f,1)
-        power_events = read_u64_struct(f,n_samples,['type','state','start_ts','end_ts','cpu'])
-        filt = (power_events['start_ts']>0) & (power_events['end_ts']>0)
-        power_events = power_events.compress(filt)
-        power_events.sort(axis=0,order=['start_ts'])
-        n_samples = read_u64(f,1)
-        self.wake_events = read_u64_struct(f,n_samples,['waker','wakee','time'])
-        self.wake_events.sort(axis=0,order=['time'])
+        callback = "do_event_"+event.event
+        if event.event=='function':
+            callback = "do_event_"+event.callee
+        if self.methods.has_key(callback):
+            self.methods[callback](event)
+        elif event.event=='function':
+            self.ftrace_function_default(event)
+        else:
+            self.ftrace_event_default(event)
 
-        c_states = []
-        p_states = []
-        for i in xrange(numcpus):
-            filt = (power_events['type']==1) & (power_events['cpu']==i)
-            samples = numpy.compress(filt,power_events)
-            c_state = Timechart(name="cpu%d"%(i),
-                                start_ts=samples['start_ts'],
-                                end_ts=samples['end_ts'],
-                                types=samples['state'])
-            c_states.append(c_state)
-            filt = (power_events['type']==2) & (power_events['cpu']==i)
-            samples = numpy.compress(filt,power_events)
-            p_state = Timechart(name="cpu%d"%(i),
-                                start_ts=samples['start_ts'],
-                                end_ts=samples['end_ts'],
-                                types=samples['state'])
-            p_states.append(p_state)
-        self.c_states = c_states
-        self.p_states = p_states
+    def load_ftrace(self,filename):
+        from ftrace import parse_ftrace
+        self.methods = {}
+        for name in dir(self):
+            method = getattr(self, name)
+            if callable(method):
+                self.methods[name] = method
+        self.start_parsing()
+        parse_ftrace(filename,self.ftrace_callback)
+        self.finish_parsing()

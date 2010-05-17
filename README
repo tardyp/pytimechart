@@ -82,4 +82,10 @@ pytimechart will open .dat files as trace-cmd file using python wrapper of trace
 At the moment trace-cmd does not install its python wrapper, you need to provide path to trace-cmd
 export PYTHONPATH=/path/to/trace-cmd
 
+Usage with perf from linux tree:
+
+sudo perf timechart record
+sudo chmod a+r perf.data
+perf trace -s timechart.py
+    
 

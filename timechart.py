@@ -1,6 +1,12 @@
 #!/usr/bin/python
 #------------------------------------------------------------------------------
 import os,sys
+from enthought.etsconfig.api import ETSConfig
+#ETSConfig.toolkit = 'qt4'
+ETSConfig.toolkit = 'wx'
+from timechart.timechart_window import TimechartWindow
+from timechart.timechart import TimechartProject
+from enthought.pyface.api import GUI
 
 # workaround bug in kiva's font manager that fails to find a correct default font on linux
 if os.name=="posix":
@@ -9,140 +15,59 @@ if os.name=="posix":
     font.set_name("DejaVu Sans")
     fontManager.defaultFont = fontManager.findfont(font)
 
+class Event():
+	def __init__(self,sec,nsec,**kw):
+		self.__dict__=kw
+		self.timestamp = sec*1000000+nsec/1000
 
-# Enthought library imports.
-from enthought.pyface.api import ApplicationWindow, GUI
-from enthought.pyface.action.api import Action, MenuManager, MenuBarManager
-from enthought.pyface.action.api import StatusBarManager, ToolBarManager
-from enthought.pyface.action.api import Group as ActionGroup
+def trace_begin():
+	global proj
+	proj = TimechartProject()
+	proj.start_parsing()
+def trace_end():
+	proj.finish_parsing()
+	# Create and open the main window.
+	window = TimechartWindow(project = proj)
+	window.configure_traits()
 
-from enthought.pyface.api import SplitApplicationWindow, SplitPanel
-from enthought.traits.ui.api import Item, Group, View,spring,HGroup,TableEditor
-from enthought.traits.api import HasTraits,Button,Str
-from enthought.traits.ui.menu import OKButton
+def sched__sched_switch(event_name, context, common_cpu,
+	common_secs, common_nsecs, common_pid, common_comm,
+	prev_comm, prev_pid, prev_prio, prev_state, 
+	next_comm, next_pid, next_prio):
+	proj.do_event_sched_switch(
+		Event(common_secs, common_nsecs,cpu=common_cpu,
+		      prev_pid=prev_pid,prev_comm=prev_comm,prev_prio=prev_prio,prev_state=prev_state,
+		      next_pid=next_pid,next_comm=next_comm,next_prio=next_prio))
 
-from enthought.enable.api import Component, ComponentEditor, Window
+def sched__sched_wakeup(event_name, context, common_cpu,
+	common_secs, common_nsecs, common_pid, common_comm,
+	comm, pid, prio, success, 
+	target_cpu):
+	proj.do_event_sched_wakeup(
+		Event(common_secs, common_nsecs,cpu=common_cpu,
+		      pid=common_pid,comm=common_comm,
+		      wakee_comm=comm,wakee_pid=pid,success=success))
 
-from enthought.pyface.api import ImageResource
-from enthought.pyface.dock.api \
-    import *
-from timechart.timechart import TimechartProject
-from timechart.timechart_plot import create_timechart_container
+def power__power_end(event_name, context, common_cpu,
+	common_secs, common_nsecs, common_pid, common_comm,
+	dummy):
+	proj.do_event_power_end(Event(common_secs, common_nsecs,cpu=common_cpu))
 
-class myDockSizer(DockSizer):
-    def _contents_items_changed ( self, event ):
-        """ Handles the 'contents' trait being changed.
-        """
-        self._is_notebook = None
-        for item, in event.added:
-            item.parent = self
-        self.calc_min( True )
-        self.modified = True
+def power__power_frequency(event_name, context, common_cpu,
+	common_secs, common_nsecs, common_pid, common_comm,
+	type, state):
+	global proj
+	proj.do_event_power_frequency(Event(common_secs, common_nsecs,cpu=common_cpu,type=type,state=state))
 
+def power__power_start(event_name, context, common_cpu,
+	common_secs, common_nsecs, common_pid, common_comm,
+	type, state):
+	proj.do_event_power_start(Event(common_secs, common_nsecs,cpu=common_cpu,type=type,state=state))
 
-class HelpWindow(HasTraits):
-    ok_button = Button('Ok')
-    version_text = Str("PyTimeChart v0.03 (Alpha)")
-    dev_text = Str('Python License')
-    dev_text1 = Str('Based on')
-    dev_text2 = Str('  Python')
-    dev_text3 = Str('  Chaco')
-    copyright_text = Str("Copyright (c) 2010 Pierre Tardy")
-    view = View(
-                HGroup(spring,Item('version_text',style='readonly',show_label = False, emphasized = True),spring),
-                spring,
-                Item('dev_text',style='readonly',show_label = False),
-                Item('dev_text1',style='readonly',show_label = False),
-                Item('dev_text2',style='readonly',show_label = False),
-                Item('dev_text3',style='readonly',show_label = False),
-                spring,
-                Item('copyright_text',style='readonly',show_label = False),
-                spring,
-                #HGroup(spring,Item('ok_button',show_label = False),spring),
-                title='About PyTimeChart',
-                width = 350,
-                height = 200,
-                buttons = [OKButton]  
-                )
-    
-    def _ok_button_fired(self):
-        self.destroy()
+def trace_unhandled(event_name, context, common_cpu, common_secs, common_nsecs,
+		common_pid, common_comm):
+	print "unhandled!",event_name
 
-class MainWindow(ApplicationWindow):
-    """ The main application window. """
-    proj = TimechartProject
-    using_old = False
-    ###########################################################################
-    # 'object' interface.
-    ###########################################################################
-    def __init__(self, **traits):
-        """ Creates a new application window. """
-
-        # Base class constructor.
-        super(MainWindow, self).__init__(**traits)
-
-        # Create an action that exits the application.
-        exit_action = Action(name='exit', on_perform=self.close)
-        help_action = Action(name='About', on_perform = self.show_about)
-        
-        # Add a menu bar.
-        self.menu_bar_manager = MenuBarManager(
-            MenuManager(exit_action ,name='&File'),
-            MenuManager(help_action,name='Help')
-        )
-
-        # Add a status bar.
-        self.status_bar_manager = StatusBarManager()
-        self.status_bar_manager.message = 'Welcome to timechart'
-        
-        return
-    def open_file(self):
-        self.status_bar_manager.message=open_file()
-    def on_range_changed(self,r):
-        time = r[1]-r[0]
-        self.status_bar_manager.message = "total view: %d.%03d %03ds %d"%(time/1000000,(time/1000)%1000,time%1000,time)
-    def _create_contents(self, parent):
-
-        window  = DockWindow( parent ).control
-        self.window=window
-        self.plot =  create_timechart_container(self.proj)
-        options_confview = self.plot.options.edit_traits(parent=window,kind='panel',scrollable=True)
-        range_tools_confview = self.plot.range_tools.edit_traits(parent=window,kind='panel',scrollable=True)
-        project_confview = self.plot.proj.edit_traits(parent=window,kind='panel',scrollable=True)
-
-        plotwindow = Window(parent=window,kind='panel',component = self.plot)
-        self.plot.index_range.on_trait_change(self.on_range_changed, "updated")
-        self.plot_control = DockControl( name      = 'Plot',
-                                         closeable = False,
-                                         control   = plotwindow.control, 
-                                         width=600,
-                                         style     = 'horizontal' )
-        sizer   = myDockSizer( contents = 
-                      [ [
-                DockControl( name      = 'Plot',
-                             closeable = False,
-                             control   = options_confview.control, 
-                             style     = 'horizontal' ),
-                DockControl( name      = 'Plot',
-                             closeable = False,
-                             control   = range_tools_confview.control, 
-                             style     = 'horizontal' ),
-                             ],
-                self.plot_control,
-                DockControl( name      = 'Plot',
-                             closeable = False,
-                             control   = project_confview.control, 
-                             style     = 'horizontal' )
-                        ])
-        self.sizer = sizer
-        window.SetSizer( sizer )
-        window.SetAutoLayout( True )
-    
-        return window
-    def show_about(self):
-        help_window = HelpWindow()
-        help_window.configure_traits()
-        
 
 import wx
 def open_file():
@@ -156,9 +81,9 @@ def open_file():
     dlg.Destroy()
     return rv
     
-# Application entry point.
+# Application entry point if not used with perf.
 prof=0
-if __name__ == '__main__':
+if __name__ == '__main__' and not os.environ.has_key('PERF_EXEC_PATH'):
     # Create the GUI (this does NOT start the GUI event loop).
     gui = GUI()
     import sys
@@ -175,8 +100,8 @@ if __name__ == '__main__':
     else:
         proj.load(fn)
     # Create and open the main window.
-    window = MainWindow(proj = proj,size=(1024,768),title="PyTimechart:%s"%(fn))
-    window.open()
+    window = TimechartWindow(project = proj)
+    window.edit_traits()
     # Start the GUI event loop!
     if prof:
         import cProfile
