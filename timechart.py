@@ -16,9 +16,10 @@ if os.name=="posix":
     fontManager.defaultFont = fontManager.findfont(font)
 
 class Event():
-	def __init__(self,sec,nsec,**kw):
+	def __init__(self,name,kw):
 		self.__dict__=kw
-		self.timestamp = sec*1000000+nsec/1000
+                self.event = name
+		self.timestamp = self.common_s*1000000+self.common_ns/1000
 
 def trace_begin():
 	global proj
@@ -30,43 +31,10 @@ def trace_end():
 	window = TimechartWindow(project = proj)
 	window.configure_traits()
 
-def sched__sched_switch(event_name, context, common_cpu,
-	common_secs, common_nsecs, common_pid, common_comm,
-	prev_comm, prev_pid, prev_prio, prev_state, 
-	next_comm, next_pid, next_prio):
-	proj.do_event_sched_switch(
-		Event(common_secs, common_nsecs,cpu=common_cpu,
-		      prev_pid=prev_pid,prev_comm=prev_comm,prev_prio=prev_prio,prev_state=prev_state,
-		      next_pid=next_pid,next_comm=next_comm,next_prio=next_prio))
 
-def sched__sched_wakeup(event_name, context, common_cpu,
-	common_secs, common_nsecs, common_pid, common_comm,
-	comm, pid, prio, success, 
-	target_cpu):
-	proj.do_event_sched_wakeup(
-		Event(common_secs, common_nsecs,cpu=common_cpu,
-		      pid=common_pid,comm=common_comm,
-		      wakee_comm=comm,wakee_pid=pid,success=success))
-
-def power__power_end(event_name, context, common_cpu,
-	common_secs, common_nsecs, common_pid, common_comm,
-	dummy):
-	proj.do_event_power_end(Event(common_secs, common_nsecs,cpu=common_cpu))
-
-def power__power_frequency(event_name, context, common_cpu,
-	common_secs, common_nsecs, common_pid, common_comm,
-	type, state):
-	global proj
-	proj.do_event_power_frequency(Event(common_secs, common_nsecs,cpu=common_cpu,type=type,state=state))
-
-def power__power_start(event_name, context, common_cpu,
-	common_secs, common_nsecs, common_pid, common_comm,
-	type, state):
-	proj.do_event_power_start(Event(common_secs, common_nsecs,cpu=common_cpu,type=type,state=state))
-
-def trace_unhandled(event_name, context, common_cpu, common_secs, common_nsecs,
-		common_pid, common_comm):
-	print "unhandled!",event_name
+def trace_unhandled(event_name, context, field_dict):
+    event_name = event_name[event_name.find("__")+2:]
+    proj.ftrace_callback(Event(event_name,field_dict))
 
 
 import wx

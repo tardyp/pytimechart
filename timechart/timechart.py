@@ -239,7 +239,7 @@ class TimechartProject(HasTraits):
             process['end_ts'].append(event.timestamp)
 
         self.cur_process_by_pid[process['pid']] = process
-        p_stack = self.cur_process[event.cpu]
+        p_stack = self.cur_process[event.common_cpu]
         if p_stack:
             p = p_stack[-1]
             if len(p['start_ts'])>len(p['end_ts']):
@@ -247,25 +247,25 @@ class TimechartProject(HasTraits):
             # mark old process to wait for cpu 
             p['start_ts'].append(int(event.timestamp))
             p['types'].append(2) 
-            p['cpus'].append(event.cpu)
+            p['cpus'].append(event.common_cpu)
             p_stack.append(process)
         else:
-            self.cur_process[event.cpu] = [process]
+            self.cur_process[event.common_cpu] = [process]
         # mark process to use cpu
         process['start_ts'].append(event.timestamp)
         process['types'].append(1) 
-        process['cpus'].append(event.cpu)
+        process['cpus'].append(event.common_cpu)
 
     def generic_process_end(self,process,event):
         if process['comm']=='swapper' and process['pid']==0:
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
             process['end_ts'].append(event.timestamp)
-        p_stack = self.cur_process[event.cpu]
+        p_stack = self.cur_process[event.common_cpu]
         if p_stack:
             p = p_stack.pop()
             if p['pid'] != process['pid']:
-                print  "warning: process premption stack following failure on CPU",event.cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
+                print  "warning: process premption stack following failure on CPU",event.common_cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
                 p_stack = []
             if p_stack:
                 p = p_stack[-1]
@@ -274,7 +274,7 @@ class TimechartProject(HasTraits):
                 # mark old process to run on cpu 
                 p['start_ts'].append(event.timestamp)
                 p['types'].append(1)
-                p['cpus'].append(event.cpu)
+                p['cpus'].append(event.common_cpu)
         
     def do_event_sched_switch(self,event):
         prev = self.generic_find_process(event.prev_pid,event.prev_comm)
@@ -285,17 +285,17 @@ class TimechartProject(HasTraits):
         if event.__dict__.has_key('prev_state') and event.prev_state == 'R':# mark prev to be waiting for cpu
             prev['start_ts'].append(event.timestamp)
             prev['types'].append(2) 
-            prev['cpus'].append(event.cpu)
+            prev['cpus'].append(event.common_cpu)
 
         self.generic_process_start(next,event)
         
     def do_event_sched_wakeup(self,event):
-        p_stack = self.cur_process[event.cpu]
+        p_stack = self.cur_process[event.common_cpu]
         if p_stack:
             p = p_stack[-1]
-            self.wake_events.append(((p['comm'],p['pid']),(event.wakee_comm,event.wakee_pid),event.timestamp))
+            self.wake_events.append(((p['comm'],p['pid']),(event.comm,event.pid),event.timestamp))
         else:
-            self.wake_events.append(((event.comm,event.pid),event.wakee_pid,event.timestamp))
+            self.wake_events.append(((event.common_comm,event.common_pid),event.pid,event.timestamp))
     def do_event_irq_handler_entry(self,event,soft=""):
         process = self.generic_find_process(0,"%sirq%d:%s"%(soft,event.irq,event.handler))
         self.last_irq[(event.irq,soft)] = process
@@ -329,16 +329,16 @@ class TimechartProject(HasTraits):
         self.generic_process_end(process,event)
         
     def do_event_power_frequency(self,event):
-        self.ensure_cpu_allocated(event.cpu)
+        self.ensure_cpu_allocated(event.common_cpu)
         if event.type==2:# p_state
-            tc = self.tmp_p_states[event.cpu]
+            tc = self.tmp_p_states[event.common_cpu]
             tc['start_ts'].append(event.timestamp)
             tc['types'].append(event.state)
 
     def do_event_power_start(self,event):
-        self.ensure_cpu_allocated(event.cpu)
+        self.ensure_cpu_allocated(event.common_cpu)
         if event.type==1:# c_state
-            tc = self.tmp_c_states[event.cpu]
+            tc = self.tmp_c_states[event.common_cpu]
             if len(tc['start_ts'])>len(tc['end_ts']):
                 tc['end_ts'].append(event.timestamp)
                 self.missed_power_end +=1
@@ -351,18 +351,18 @@ class TimechartProject(HasTraits):
             tc['types'].append(event.state)
 
     def do_event_power_end(self,event):
-        self.ensure_cpu_allocated(event.cpu)
+        self.ensure_cpu_allocated(event.common_cpu)
 
-        tc = self.tmp_c_states[event.cpu]
+        tc = self.tmp_c_states[event.common_cpu]
         if len(tc['start_ts'])>len(tc['end_ts']):
             tc['end_ts'].append(event.timestamp)
 
-    def do_event_function_default(self,event):
+    def do_function_default(self,event):
         process = self.generic_find_process(0,"kernel function:%s"%(event.callee))
         self.generic_process_start(process,event)
         self.generic_process_end(process,event)
 
-    def do_event_event_default(self,event):
+    def do_event_default(self,event):
         process = self.generic_find_process(0,"event:%s"%(event.event))
         self.generic_process_start(process,event)
         self.generic_process_end(process,event)
@@ -378,6 +378,11 @@ class TimechartProject(HasTraits):
         self.last_irq={}
         self.last_spi=[]
         self.missed_power_end = 0
+        self.methods = {}
+        for name in dir(self):
+            method = getattr(self, name)
+            if callable(method):
+                self.methods[name] = method
 
     def finish_parsing(self):
         #put generated data in unresizable numpy format
@@ -441,17 +446,12 @@ class TimechartProject(HasTraits):
         if self.methods.has_key(callback):
             self.methods[callback](event)
         elif event.event=='function':
-            self.ftrace_function_default(event)
+            self.do_function_default(event)
         else:
-            self.ftrace_event_default(event)
+            self.do_event_default(event)
 
     def load_ftrace(self,filename):
         from ftrace import parse_ftrace
-        self.methods = {}
-        for name in dir(self):
-            method = getattr(self, name)
-            if callable(method):
-                self.methods[name] = method
         self.start_parsing()
         parse_ftrace(filename,self.ftrace_callback)
         self.finish_parsing()
