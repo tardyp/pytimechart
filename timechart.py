@@ -2,8 +2,13 @@
 #------------------------------------------------------------------------------
 import os,sys
 from enthought.etsconfig.api import ETSConfig
+
+# select the toolkit we want to use
+# WX is more stable for now
 #ETSConfig.toolkit = 'qt4'
 ETSConfig.toolkit = 'wx'
+
+
 from timechart.timechart_window import TimechartWindow
 from timechart.timechart import TimechartProject
 from enthought.pyface.api import GUI
@@ -16,20 +21,20 @@ if os.name=="posix":
     fontManager.defaultFont = fontManager.findfont(font)
 
 class Event():
-	def __init__(self,name,kw):
-		self.__dict__=kw
-                self.event = name
-		self.timestamp = self.common_s*1000000+self.common_ns/1000
+    def __init__(self,name,kw):
+        self.__dict__=kw
+        self.event = name
+        self.timestamp = self.common_s*1000000+self.common_ns/1000
 
 def trace_begin():
-	global proj
-	proj = TimechartProject()
-	proj.start_parsing()
+    global proj
+    proj = TimechartProject()
+    proj.start_parsing()
 def trace_end():
-	proj.finish_parsing()
-	# Create and open the main window.
-	window = TimechartWindow(project = proj)
-	window.configure_traits()
+    proj.finish_parsing()
+    # Create and open the main window.
+    window = TimechartWindow(project = proj)
+    window.configure_traits()
 
 
 def trace_unhandled(event_name, context, field_dict):
