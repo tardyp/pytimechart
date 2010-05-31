@@ -265,7 +265,7 @@ class TimechartProject(HasTraits):
         if p_stack:
             p = p_stack.pop()
             if p['pid'] != process['pid']:
-                print  "warning: process premption stack following failure on CPU",event.common_cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
+                #print  "warning: process premption stack following failure on CPU",event.common_cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
                 p_stack = []
             if p_stack:
                 p = p_stack[-1]
@@ -297,7 +297,7 @@ class TimechartProject(HasTraits):
         else:
             self.wake_events.append(((event.common_comm,event.common_pid),event.pid,event.timestamp))
     def do_event_irq_handler_entry(self,event,soft=""):
-        process = self.generic_find_process(0,"%sirq%d:%s"%(soft,event.irq,event.handler))
+        process = self.generic_find_process(0,"%sirq%d:%s"%(soft,event.irq,event.name))
         self.last_irq[(event.irq,soft)] = process
         self.generic_process_start(process,event)
     def do_event_irq_handler_exit(self,event,soft=""):
@@ -309,8 +309,12 @@ class TimechartProject(HasTraits):
             return
         self.generic_process_end(process,event)
     def do_event_softirq_entry(self,event):
+        event.irq = event.vec
+        event.name = ""
         return self.do_event_irq_handler_entry(event,"soft")
     def do_event_softirq_exit(self,event):
+        event.irq = event.vec
+        event.name = ""
         return self.do_event_irq_handler_exit(event,"soft")
         
     def do_event_spi_sync(self,event):
