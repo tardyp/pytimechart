@@ -14,7 +14,9 @@ class TimechartWindow(HasTraits):
         self.plot =  create_timechart_container(project)
         self.plot_options = self.plot.options
         self.plot_range_tools = self.plot.range_tools
-
+        self.trait_view().title = "PyTimechart: "+project.filename
+    def get_title(self):
+        return "PyTimechart:"+self.project.filename
     # Create an action that exits the application.
     exit_action = Action(name='exit', action='do_action_exit')
     about_action = Action(name='About',action='do_action_about')
@@ -39,7 +41,6 @@ class TimechartWindow(HasTraits):
         menubar = MenuBar(Menu(exit_action, name = '&File'),
                           Menu(about_action, name = '&Help')),
         statusbar = [StatusItem(name='status'),],
-        title = "PyTimechart",
         resizable = True,
         width = 1280,
         height = 1024,
