@@ -265,7 +265,7 @@ class TimechartProject(HasTraits):
         if p_stack:
             p = p_stack.pop()
             if p['pid'] != process['pid']:
-                #print  "warning: process premption stack following failure on CPU",event.common_cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
+                print  "warning: process premption stack following failure on CPU",event.common_cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
                 p_stack = []
             if p_stack:
                 p = p_stack[-1]
