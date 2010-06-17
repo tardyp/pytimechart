@@ -27,7 +27,9 @@ events_desc = [
     ('irq_handler_exit', 'irq=%d return=%s','irq','return'),
     ('irq_handler_exit', 'irq=%d ret=%s','irq','return'),
     ('workqueue_execution','thread=%s func=%s\\+%s/%s','thread','func','func_offset','func_size'),
-    ('workqueue_execution','thread=%s func=%s','thread','func')
+    ('workqueue_execution','thread=%s func=%s','thread','func'),
+    ('wakelock_lock',   'name=%s type=%d', 'name', 'type'),
+    ('wakelock_unlock',   'name=%s', 'name'),
     ]
 
 # pre process our descriptions to transform it into re

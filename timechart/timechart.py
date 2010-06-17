@@ -232,49 +232,51 @@ class TimechartProject(HasTraits):
             self.tmp_process[(pid,comm)] = tmp
         return tmp
 
-    def generic_process_start(self,process,event):
+    def generic_process_start(self,process,event, build_p_stack=True):
         if process['comm']=='swapper' and process['pid']==0:
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
             process['end_ts'].append(event.timestamp)
 
         self.cur_process_by_pid[process['pid']] = process
-        p_stack = self.cur_process[event.common_cpu]
-        if p_stack:
-            p = p_stack[-1]
-            if len(p['start_ts'])>len(p['end_ts']):
-                p['end_ts'].append(event.timestamp)
-            # mark old process to wait for cpu 
-            p['start_ts'].append(int(event.timestamp))
-            p['types'].append(2) 
-            p['cpus'].append(event.common_cpu)
-            p_stack.append(process)
-        else:
-            self.cur_process[event.common_cpu] = [process]
+        if build_p_stack :
+            p_stack = self.cur_process[event.common_cpu]
+            if p_stack:
+                p = p_stack[-1]
+                if len(p['start_ts'])>len(p['end_ts']):
+                    p['end_ts'].append(event.timestamp)
+                # mark old process to wait for cpu 
+                p['start_ts'].append(int(event.timestamp))
+                p['types'].append(2) 
+                p['cpus'].append(event.common_cpu)
+                p_stack.append(process)
+            else:
+                self.cur_process[event.common_cpu] = [process]
         # mark process to use cpu
         process['start_ts'].append(event.timestamp)
         process['types'].append(1) 
         process['cpus'].append(event.common_cpu)
 
-    def generic_process_end(self,process,event):
+    def generic_process_end(self,process,event, build_p_stack=True):
         if process['comm']=='swapper' and process['pid']==0:
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
             process['end_ts'].append(event.timestamp)
-        p_stack = self.cur_process[event.common_cpu]
-        if p_stack:
-            p = p_stack.pop()
-            if p['pid'] != process['pid']:
-                print  "warning: process premption stack following failure on CPU",event.common_cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
-                p_stack = []
+        if build_p_stack :
+            p_stack = self.cur_process[event.common_cpu]
             if p_stack:
-                p = p_stack[-1]
-                if len(p['start_ts'])>len(p['end_ts']):
-                    p['end_ts'].append(event.timestamp)
-                # mark old process to run on cpu 
-                p['start_ts'].append(event.timestamp)
-                p['types'].append(1)
-                p['cpus'].append(event.common_cpu)
+                p = p_stack.pop()
+                if p['pid'] != process['pid']:
+                    print  "warning: process premption stack following failure on CPU",event.common_cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
+                    p_stack = []
+                if p_stack:
+                    p = p_stack[-1]
+                    if len(p['start_ts'])>len(p['end_ts']):
+                        p['end_ts'].append(event.timestamp)
+                    # mark old process to run on cpu 
+                    p['start_ts'].append(event.timestamp)
+                    p['types'].append(1)
+                    p['cpus'].append(event.common_cpu)
         
     def do_event_sched_switch(self,event):
         prev = self.generic_find_process(event.prev_pid,event.prev_comm)
@@ -295,7 +297,7 @@ class TimechartProject(HasTraits):
             p = p_stack[-1]
             self.wake_events.append(((p['comm'],p['pid']),(event.comm,event.pid),event.timestamp))
         else:
-            self.wake_events.append(((event.common_comm,event.common_pid),event.pid,event.timestamp))
+            self.wake_events.append(((event.common_comm,event.common_pid),(event.comm,event.pid),event.timestamp))
     def do_event_irq_handler_entry(self,event,soft=""):
         process = self.generic_find_process(0,"%sirq%d:%s"%(soft,event.irq,event.name))
         self.last_irq[(event.irq,soft)] = process
@@ -320,13 +322,24 @@ class TimechartProject(HasTraits):
     def do_event_spi_sync(self,event):
         process = self.generic_find_process(0,"spi:%s"%(event.caller))
         self.last_spi.append(process)
-        self.generic_process_start(process,event)
+        self.generic_process_start(process,event,False)
     def do_event_spi_complete(self,event):
         process = self.last_spi.pop(0)
-        self.generic_process_end(process,event)
+        self.generic_process_end(process,event,False)
     def do_event_spi_async(self,event):
         if event.caller != 'spi_sync':
-            self.do_event_spi_sync(event)
+            self.do_event_spi_sync(event,False)
+
+    def do_event_wakelock_lock(self,event):
+        process = self.generic_find_process(0,"wakelock:%s"%(event.name))
+        self.generic_process_start(process,event,False)
+        self.wake_events.append(((event.common_comm,event.common_pid),(process['comm'],process['pid']),event.timestamp))
+
+    def do_event_wakelock_unlock(self,event):
+        process = self.generic_find_process(0,"wakelock:%s"%(event.name))
+        self.generic_process_end(process,event,False)
+        self.wake_events.append(((event.common_comm,event.common_pid),(process['comm'],process['pid']),event.timestamp))
+
     def do_event_workqueue_execution(self,event):
         process = self.generic_find_process(0,"work:%s"%(event.func))
         self.generic_process_start(process,event)
