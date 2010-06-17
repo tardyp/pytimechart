@@ -25,11 +25,11 @@ c_states_colors=[0x000000,0xbbbbff,0x7777ff,0x5555ff,0x3333ff,0x1111ff,0x0000ff]
 process_colors=[0x000000,0x555555,0xffff88,0x55ffff]
 class TimeChartOptions(HasTraits):
     minimum_time_filter = Enum((0,1000,10000,50000,100000,500000,1000000,5000000,1000000,5000000,10000000,50000000))
-    remove_pids_not_on_screen = Bool(False)
+    remove_pids_not_on_screen = Bool(True)
     show_wake_events = Bool(False)
     show_p_states = Bool(True)
     show_c_states = Bool(True)
-    auto_zoom_y = Bool(False)
+    auto_zoom_y = Bool(True)
 
     proj = TimechartProject
 
