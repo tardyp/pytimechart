@@ -172,9 +172,9 @@ class TimechartPlot(BarPlot):
             return 0
         if bar_middle_y+self.bar_height < self.y or bar_middle_y-self.bar_height>self.y+self.height:
             return 1 #quickly decide we are not on the screen
+        self._draw_bg(gc,base_y,tc.bg_color)
         # we are too short in height, dont display all the labels
         if self.last_label >= bar_middle_y:
-            self._draw_bg(gc,base_y,tc.bg_color)
             # draw label
             l_w,l_h = self._draw_label(gc,label,tc.name,self.x,bar_middle_y)
             self.last_label = bar_middle_y-8
@@ -350,6 +350,8 @@ class TimechartPlot(BarPlot):
         for tc in self.proj.processes:
             if tc.total_time < self.options.minimum_time_filter:
                 continue
+            if tc.show==False:
+                continue
             processes_y[(tc.comm,tc.pid)] = y+.5
             if self._draw_timechart(gc,tc,label,y,self.process_colors) or not self.options.remove_pids_not_on_screen:
                 y-=1
@@ -405,6 +407,9 @@ def create_timechart_container(project):
                          process_colors=process_colors,
                          render_style='hold',
                          line_width=1)
+    project.on_trait_change(plot.invalidate, "show")
+    project.on_trait_change(plot.invalidate, "selected")
+    project.on_trait_change(plot.invalidate, "hide")
     max_process = 50
     if value_range.high>max_process:
         value_range.low = value_range.high-max_process

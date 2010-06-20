@@ -4,7 +4,7 @@
 from numpy import amin, amax, arange, searchsorted, sin, pi, linspace
 import numpy as np
 from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
-    DelegatesTo,Int,Long,Enum,Color,List,Bool,CArray,Property, cached_property, String
+    DelegatesTo,Int,Long,Enum,Color,List,Bool,CArray,Property, cached_property, String, Button
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
 from enthought.enable.colors import ColorTrait
 from enthought.traits.ui.table_column \
@@ -32,6 +32,7 @@ class Timechart(HasTraits):
     has_comments = Bool(True)
     total_time = Property(Int)
     max_types = Property(Int)
+    default_bg_color = Property(ColorTrait)
     bg_color = Property(ColorTrait)
     max_latency = Property(Int)
     max_latency_ts = Property(CArray)
@@ -123,7 +124,7 @@ class Process(Timechart):
         return []
 
     @cached_property
-    def _get_bg_color(self):
+    def _get_default_bg_color(self):
         if self.max_latency >0 and max(self.end_ts - self.start_ts)>self.max_latency:
             return (1,.1,.1,1)
         if self.pid==0:
@@ -136,46 +137,82 @@ class Process(Timechart):
             return (.3,1,.3,1)
         else:
             return (.9,.9,1,1)
+    def _get_bg_color(self):
+        if self.project != None and self in self.project.selected:
+            return  (0.678, 0.847, 0.902, 1.0)
+        return self.default_bg_color
 
-
+# we subclass ObjectColumn to be able to change the text color depending of whether the Process is shown
+class coloredObjectColumn(ObjectColumn):
+    def get_text_color(self,i):
+        if i.show:
+            return "#111111"
+        else:
+            return  "#777777"
+    def get_cell_color(self,i):
+        r,g,b,a = i.default_bg_color
+        return "#%02X%02X%02X"%(255*r,255*g,255*b)
+        
 # The definition of the process TableEditor:
 process_table_editor = TableEditor(
-    columns = [ 
-                ObjectColumn( name = 'comm',  width = 0.45 ,editable=False),
-                ObjectColumn( name = 'pid',  width = 0.10  ,editable=False),
-                ObjectColumn( name = 'selection_time',label="stime",  width = 0.20  ,editable=False),
+    columns = [
+                coloredObjectColumn( name = 'comm',  width = 0.45 ,editable=False),
+                coloredObjectColumn( name = 'pid',  width = 0.10  ,editable=False),
+                coloredObjectColumn( name = 'selection_time',label="stime",  width = 0.20  ,editable=False),
                 ExpressionColumn( 
                     label = 'stime%', 
                     width = 0.20,
                     expression = "'%.2f' % (object.selection_pc)" )
                 ],
     deletable   = False,
+    editable   = False,
     sort_model  = False,
     auto_size   = False,
     orientation = 'vertical',
-    show_toolbar = False
+    show_toolbar = False,
+    selection_mode = 'rows',
+    selected = "selected"
     )
 
 class TimechartProject(HasTraits):
     c_states = List(Timechart)
     p_states = List(Timechart)
     processes = List(Process)
+    selected =  List(Process)
+    show = Button()
+    hide = Button()
+    selectall = Button()
     filename = Str("")
     power_event = CArray
     num_cpu = Property(Int,depends_on='c_states')
     num_process = Property(Int,depends_on='process')
     traits_view = View( 
+        HGroup(Item('show'), Item('hide') ,Item('selectall',label='all'),show_labels  = False),
         Item( 'processes',
               show_label  = False,
               height=40,
               editor      = process_table_editor
-              ))
+              )
+        )
+    def _show_changed(self):
+        for i in self.selected:
+            i.show = True
+    def _hide_changed(self):
+        for i in self.selected:
+            i.show = False
+    def _selectall_changed(self):
+        if self.selected == self.processes:
+            self.selected = []
+        else:
+            self.selected = self.processes
+
     @cached_property
     def _get_num_cpu(self):
         return len(self.c_states)
     def _get_num_process(self):
         return len(self.processes)
-
+    def process_list_selected(self, selection):
+        print selection
     def load_random(self,num_cpu,num_process,length):
         c_states = [ Timechart(name="CCPU%d"%(i)) for i in xrange(num_cpu)]
         p_states = [ Timechart(name="FCPU%d"%(i)) for i in xrange(num_cpu)]
@@ -428,7 +465,7 @@ class TimechartProject(HasTraits):
         self.p_states=p_states
         processes = []
         for pid,comm in self.tmp_process:
-            t = Process(pid=pid,comm=comm)
+            t = Process(pid=pid,comm=comm,project=self)
             tc = self.tmp_process[pid,comm]
             while len(tc['start_ts'])>len(tc['end_ts']):
                 tc['end_ts'].append(tc['start_ts'][-1])

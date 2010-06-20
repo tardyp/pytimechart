@@ -2,7 +2,7 @@
 #------------------------------------------------------------------------------
 import os,sys
 from enthought.etsconfig.api import ETSConfig
-
+import enthought.traits.ui.api
 # select the toolkit we want to use
 # WX is more stable for now
 #ETSConfig.toolkit = 'qt4'
@@ -19,6 +19,7 @@ if os.name=="posix":
     font = FontProperties()
     font.set_name("DejaVu Sans")
     fontManager.defaultFont = fontManager.findfont(font)
+
 
 class Event():
     def __init__(self,name,kw):
@@ -75,6 +76,8 @@ if __name__ == '__main__' and not os.environ.has_key('PERF_EXEC_PATH'):
     # Create and open the main window.
     window = TimechartWindow(project = proj)
     window.edit_traits()
+    # Traits has the bad habbit of autoselecting the first row in the table_editor. Workaround this.
+    proj.selected = []
     # Start the GUI event loop!
     if prof:
         import cProfile
