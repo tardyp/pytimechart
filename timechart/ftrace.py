@@ -1,3 +1,4 @@
+from decimal import *
 import re
 import sys
 # take the TP_printk from the /include/trace/events dir
@@ -135,7 +136,7 @@ def parse_ftrace(filename,callback):
                 'common_comm' : groups[0],
                 'common_pid' :  int(groups[1]),
                 'common_cpu' : int(groups[2]),
-                'timestamp' : int(float(groups[3])*1000000),
+                'timestamp' : int(Decimal(groups[3])*1000000),
                 'event' : event_name,
                 'event_arg' : groups[5]
                 }
