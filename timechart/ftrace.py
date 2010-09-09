@@ -140,8 +140,6 @@ def parse_ftrace(filename,callback):
                 'event' : event_name,
                 'event_arg' : groups[5]
                 }
-            if last_timestamp == event['timestamp']:
-                event['timestamp']+=1
             last_timestamp = event['timestamp']
             to_match = event['event_arg']
             try:
