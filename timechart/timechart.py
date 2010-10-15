@@ -347,6 +347,11 @@ class TimechartProject(HasTraits):
             print self.last_irq.keys(),(event.irq,soft)
             return
         self.generic_process_end(process,event)
+        try:
+            if event.ret=="unhandled":
+                process['types'][-1]=4
+	except:
+	    pass
     def do_event_softirq_entry(self,event):
         event.irq = event.vec
         event.name = ""
