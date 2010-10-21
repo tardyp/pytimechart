@@ -31,6 +31,7 @@ events_desc = [
     ('workqueue_execution','thread=%s func=%s','thread','func'),
     ('wakelock_lock',   'name=%s type=%d', 'name', 'type'),
     ('wakelock_unlock',   'name=%s', 'name'),
+    ('runtime_pm_status',   'driver=%s dev=%s prev_status=%s status=%s', 'driver','dev','prev_status','status'),
     ]
 
 # pre process our descriptions to transform it into re

@@ -22,7 +22,7 @@ from enthought.enable.colors import ColorTrait
 from enthought.pyface.timer import timer
 
 c_states_colors=[0x000000,0xbbbbff,0x7777ff,0x5555ff,0x3333ff,0x1111ff,0x0000ff]
-process_colors=[0x000000,0x555555,0xffff88,0x55ffff,0xAD2D2D]
+process_colors=[0x000000,0x555555,0xffff88,0x55ffff,0xAD2D2D, 0xeeeeee,0xeeaaaa,0xaaaaee,0xee0000]
 class TimeChartOptions(HasTraits):
     minimum_time_filter = Enum((0,1000,10000,50000,100000,500000,1000000,5000000,1000000,5000000,10000000,50000000))
     remove_pids_not_on_screen = Bool(True)

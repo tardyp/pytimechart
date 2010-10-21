@@ -128,6 +128,8 @@ class Process(Timechart):
         if self.max_latency >0 and max(self.end_ts - self.start_ts)>self.max_latency:
             return (1,.1,.1,1)
         if self.pid==0:
+            if self.comm.startswith("runtime_pm"):
+                return (1,.8,.8,1)
             if self.comm.startswith("irq"):
                 return (.9,1,.9,1)
             if self.comm.startswith("softirq"):
@@ -194,6 +196,7 @@ class TimechartProject(HasTraits):
               editor      = process_table_editor
               )
         )
+    first_ts = 0
     def _show_changed(self):
         for i in self.selected:
             i.show = True
@@ -274,7 +277,8 @@ class TimechartProject(HasTraits):
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
             process['end_ts'].append(event.timestamp)
-
+        if self.first_ts == 0:
+            self.first_ts = event.timestamp
         self.cur_process_by_pid[process['pid']] = process
         if build_p_stack :
             p_stack = self.cur_process[event.common_cpu]
@@ -416,6 +420,22 @@ class TimechartProject(HasTraits):
         if len(tc['start_ts'])>len(tc['end_ts']):
             tc['end_ts'].append(event.timestamp)
 
+    def do_event_runtime_pm_status(self,event):
+        if self.first_ts == 0:
+            self.first_ts = event.timestamp-1
+
+        p = self.generic_find_process(0,"runtime_pm:%s %s"%(event.driver,event.dev))
+        if len(p['start_ts'])==0:
+            p['start_ts'].append(int(self.first_ts))
+            p['types'].append({"SUSPENDED":5,"SUSPENDING":6,"RESUMING":7,"ACTIVE":8}[event.prev_status]) 
+            p['cpus'].append(event.common_cpu)
+            p['end_ts'].append(event.timestamp)
+        if len(p['start_ts'])>len(p['end_ts']):
+            p['end_ts'].append(event.timestamp)
+        p['start_ts'].append(int(event.timestamp))
+        p['types'].append({"SUSPENDED":5,"SUSPENDING":6,"RESUMING":7,"ACTIVE":8}[event.status]) 
+        p['cpus'].append(event.common_cpu)
+
     def do_function_default(self,event):
         process = self.generic_find_process(0,"kernel function:%s"%(event.callee))
         self.generic_process_start(process,event)
@@ -469,18 +489,24 @@ class TimechartProject(HasTraits):
         self.wake_events = numpy.array(self.wake_events,dtype=[('waker',tuple),('wakee',tuple),('time','uint64')])
         self.p_states=p_states
         processes = []
+        last_ts = 0
+        for pid,comm in self.tmp_process:
+            t = Process(pid=pid,comm=comm,project=self)
+            tc = self.tmp_process[pid,comm]
+            if len(tc['end_ts'])>0 and last_ts < tc['end_ts'][-1]:
+                last_ts = tc['end_ts'][-1]
         for pid,comm in self.tmp_process:
             t = Process(pid=pid,comm=comm,project=self)
             tc = self.tmp_process[pid,comm]
             while len(tc['start_ts'])>len(tc['end_ts']):
-                tc['end_ts'].append(tc['start_ts'][-1])
+                tc['end_ts'].append(last_ts)
             t.start_ts = numpy.array(tc['start_ts'])
             t.end_ts = numpy.array(tc['end_ts'])
             t.types = numpy.array(tc['types'])
             t.cpus = numpy.array(tc['cpus'])
             t.comments = numpy.array(tc['comments'])
             processes.append(t)
-        processes.sort(lambda x,y:cmp(x.name,y.name))
+        processes.sort(lambda x,y:x.name.startswith("runtime_pm") and -1 or cmp(x.name,y.name))
         processes.sort(lambda x,y:cmp(x.pid,y.pid))
         self.processes = processes
         self.p_states=p_states
