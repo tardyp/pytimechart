@@ -9,7 +9,7 @@ from enthought.traits.api import Float, Instance, Int,Bool,Str,Unicode,Enum,Butt
 from enthought.chaco.api import AbstractOverlay, BaseXYPlot
 from enthought.chaco.label import Label
 from enthought.kiva.traits.kiva_font_trait import KivaFont
-from enthought.enable.api import black_color_trait
+from enthought.enable.api import black_color_trait, KeySpec
 
 from timechart import TimechartProject, Timechart
 
@@ -362,7 +362,9 @@ class TimechartPlot(BarPlot):
         if self.options.auto_zoom_y:
             self.options.auto_zoom_timer.Start()
 class myZoomTool(ZoomTool):
-    """ a zoom tool which change y range only when control is pressed"""
+    """ a zoom tool which change y range only when control is pressed
+    it also hande some page up page down to zoom via keyboard 
+    """
     def normal_mouse_wheel(self, event):
         if event.control_down:
             self.tool_mode = "box"
@@ -372,6 +374,28 @@ class myZoomTool(ZoomTool):
         # restore default zoom mode
         if event.control_down:
             self.tool_mode = "range"
+    def normal_key_pressed(self, event):
+        super(myZoomTool, self).normal_key_pressed(event)
+        print event
+        class fake_event:
+            pass
+        my_fake_event = fake_event()
+        c = self.component
+        my_fake_event.x = event.x#(c.x+c.x2)/2
+        my_fake_event.y = event.x#(c.y+c.y2)/2
+        my_fake_event.control_down = event.control_down
+        my_fake_event.mouse_wheel = 0
+        if event.character == 'Page Up':
+            my_fake_event.mouse_wheel = 1
+        if event.character == 'Page Down':
+            my_fake_event.mouse_wheel = -1
+        if event.shift_down:
+            my_fake_event.mouse_wheel*=10
+        if event.alt_down:
+            my_fake_event.mouse_wheel*=2
+        if my_fake_event.mouse_wheel:
+            self.normal_mouse_wheel(my_fake_event)
+
 def create_timechart_container(project):
     """ create a vplotcontainer which connects all the inside plots to synchronize their index_range """
 
