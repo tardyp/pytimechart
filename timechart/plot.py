@@ -11,8 +11,9 @@ from enthought.chaco.label import Label
 from enthought.kiva.traits.kiva_font_trait import KivaFont
 from enthought.enable.api import black_color_trait, KeySpec
 
-from timechart import TimechartProject, Timechart
-
+from timechart.model import tcProject
+from timechart.colors import get_aggcolor_by_id
+from timechart import tools
 from numpy import linspace,arange,amin,amax
 from math import log
 from numpy import array, ndarray,argmax,searchsorted,mean
@@ -20,8 +21,6 @@ from numpy import array, compress, column_stack, invert, isnan, transpose, zeros
 from enthought.traits.api import List
 from enthought.enable.colors import ColorTrait
 from enthought.pyface.timer import timer
-
-c_states_colors=[0x000000,0xbbbbff,0x7777ff,0x5555ff,0x3333ff,0x1111ff,0x0000ff]
 process_colors=[0x000000,0x555555,0xffff88,0x55ffff,0xAD2D2D, 0xeeeeee,0xeeaaaa,0xaaaaee,0xee0000]
 class TimeChartOptions(HasTraits):
     minimum_time_filter = Enum((0,1000,10000,50000,100000,500000,1000000,5000000,1000000,5000000,10000000,50000000))
@@ -31,7 +30,7 @@ class TimeChartOptions(HasTraits):
     show_c_states = Bool(True)
     auto_zoom_y = Bool(True)
 
-    proj = TimechartProject
+    proj = tcProject
 
     traits_view = View(VGroup(
             Item('minimum_time_filter'),
@@ -102,16 +101,14 @@ class RangeSelectionTools(HasTraits):
                 part = cpu_stat[cstate]
                 tmp += "C%d:%dus %02.f%%\n"%(cstate,part,part*100/(self.end-self.start))
         self.c_states = tmp
+        print "stats",self.start,self.end
         self.plot.proj.process_stats(self.start,self.end)
         self._timer.Stop()
         pass
-class TimechartPlot(BarPlot):
+class tcPlot(BarPlot):
     """custom plot to draw the timechart
     probably not very 'chacotic' We draw the chart as a whole
     """
-    # the colors of the values
-    c_states_colors = List(ColorTrait)
-    process_colors = List(ColorTrait)
     # The text of the axis title.
     title = Trait('', Str, Unicode) #May want to add PlotLabel option
     # The font of the title.
@@ -164,7 +161,7 @@ class TimechartPlot(BarPlot):
         label.draw(gc)
         gc.translate_ctm(*(-offset))
         return l_w,l_h
-    def _draw_timechart(self,gc,tc,label,base_y,fill_colors):
+    def _draw_timechart(self,gc,tc,label,base_y):
         
         bar_middle_y = self.first_bar_y+(base_y+.5)*self.bar_height
         points = self._gather_timechart_points(tc.start_ts,tc.end_ts,base_y,.2)
@@ -196,7 +193,7 @@ class TimechartPlot(BarPlot):
             if points.size>1000: # critical path, we only draw unicolor rects
                 #calculate the mean color
                 t = mean(tc.types[points[0][4]:points[-1][4]])
-                gc.set_fill_color(fill_colors[int(t)])
+                gc.set_fill_color(get_aggcolor_by_id(int(t)))
                 rects=column_stack((lower_left_pts, bounds))
                 gc.rects(rects)
                 gc.draw_path()
@@ -212,8 +209,7 @@ class TimechartPlot(BarPlot):
                         # only draw when we change color. agg will then simplify the path
                         # note that a path only can only have one color in agg.
                         gc.draw_path()
-                        if len(fill_colors)>t:
-                            gc.set_fill_color(fill_colors[int(t)])
+                        gc.set_fill_color(get_aggcolor_by_id(int(t)))
                         last_t = t
                     gc.rect(x,y,sx,sy)
                 # draw last path
@@ -340,7 +336,7 @@ class TimechartPlot(BarPlot):
         for i in xrange(len(self.proj.c_states)):
             tc = self.proj.c_states[i]
             if self.options.show_c_states:
-                self._draw_timechart(gc,tc,label,y,self.c_states_colors)
+                self._draw_timechart(gc,tc,label,y)
                 y-=1
             tc = self.proj.p_states[i]
             if self.options.show_p_states:
@@ -353,7 +349,7 @@ class TimechartPlot(BarPlot):
             if tc.show==False:
                 continue
             processes_y[(tc.comm,tc.pid)] = y+.5
-            if self._draw_timechart(gc,tc,label,y,self.process_colors) or not self.options.remove_pids_not_on_screen:
+            if self._draw_timechart(gc,tc,label,y) or not self.options.remove_pids_not_on_screen:
                 y-=1
         if self.options.show_wake_events:
             self._draw_wake_ups(gc,processes_y)
@@ -361,40 +357,6 @@ class TimechartPlot(BarPlot):
         self.min_y = y
         if self.options.auto_zoom_y:
             self.options.auto_zoom_timer.Start()
-class myZoomTool(ZoomTool):
-    """ a zoom tool which change y range only when control is pressed
-    it also hande some page up page down to zoom via keyboard 
-    """
-    def normal_mouse_wheel(self, event):
-        if event.control_down:
-            self.tool_mode = "box"
-        else:
-            self.tool_mode = "range"
-        super(myZoomTool, self).normal_mouse_wheel(event)
-        # restore default zoom mode
-        if event.control_down:
-            self.tool_mode = "range"
-    def normal_key_pressed(self, event):
-        super(myZoomTool, self).normal_key_pressed(event)
-        print event
-        class fake_event:
-            pass
-        my_fake_event = fake_event()
-        c = self.component
-        my_fake_event.x = event.x#(c.x+c.x2)/2
-        my_fake_event.y = event.x#(c.y+c.y2)/2
-        my_fake_event.control_down = event.control_down
-        my_fake_event.mouse_wheel = 0
-        if event.character == 'Page Up':
-            my_fake_event.mouse_wheel = 1
-        if event.character == 'Page Down':
-            my_fake_event.mouse_wheel = -1
-        if event.shift_down:
-            my_fake_event.mouse_wheel*=10
-        if event.alt_down:
-            my_fake_event.mouse_wheel*=2
-        if my_fake_event.mouse_wheel:
-            self.normal_mouse_wheel(my_fake_event)
 
 def create_timechart_container(project):
     """ create a vplotcontainer which connects all the inside plots to synchronize their index_range """
@@ -420,15 +382,13 @@ def create_timechart_container(project):
     value_range = DataRange1D(low=0, high=project.num_cpu*2+project.num_process)
     value_mapper = LinearMapper(range=value_range,domain_limit=(0,project.num_cpu*2+project.num_process))
     index = ArrayDataSource(array((low,high)), sort_order="ascending")
-    plot = TimechartPlot(index=index,
+    plot = tcPlot(index=index,
                          proj=project, bgcolor="white",padding=(0,0,0,40),
                          use_backbuffer = True,
                          fill_padding = True,
                          value_mapper = value_mapper,
                          index_mapper=index_mapper,
                          line_color="black",
-                         c_states_colors=c_states_colors,
-                         process_colors=process_colors,
                          render_style='hold',
                          line_width=1)
     project.on_trait_change(plot.invalidate, "show")
@@ -439,7 +399,7 @@ def create_timechart_container(project):
         value_range.low = value_range.high-max_process
     # Attach some tools 
     plot.tools.append(PanTool(plot,drag_button='left'))
-    zoom = myZoomTool(component=plot, tool_mode="range", always_on=True,axis="index",drag_button=None)
+    zoom = tools.myZoomTool(component=plot, tool_mode="range", always_on=True,axis="index",drag_button=None)
     plot.tools.append(zoom)
 
     plot.range_selection = RangeSelection(plot,resize_margin=1)

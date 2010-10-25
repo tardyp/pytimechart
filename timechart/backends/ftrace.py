@@ -31,7 +31,8 @@ events_desc = [
     ('workqueue_execution','thread=%s func=%s','thread','func'),
     ('wakelock_lock',   'name=%s type=%d', 'name', 'type'),
     ('wakelock_unlock',   'name=%s', 'name'),
-    ('runtime_pm_status',   'driver=%s dev=%s prev_status=%s status=%s', 'driver','dev','prev_status','status'),
+    ('runtime_pm_status',   'driver=%s dev=%s status=%s', 'driver','dev','status'),
+    ('runtime_pm_usage',   'driver=%s dev=%s usage=%d', 'driver','dev','usage'),
     ]
 
 # pre process our descriptions to transform it into re
@@ -168,6 +169,21 @@ def parse_ftrace(filename,callback):
             callback(Event(event))
             continue
     fid.close()
+
+def load_ftrace(fn):
+    from timechart.model import tcProject
+    proj = tcProject()
+    proj.filename = fn
+    proj.start_parsing()
+    parse_ftrace(fn,proj.handle_trace_event)
+    proj.finish_parsing()
+    return proj
+    
+
+def detect_ftrace(fn):
+    if fn.endswith(".txt"):
+        return load_ftrace
+    return None
 #### TEST ######################################################################
 if __name__ == "__main__":
     def callback(event):
