@@ -1,6 +1,7 @@
 from decimal import *
 import re
 import sys
+from timechart.plugin import get_plugins_additional_ftrace_parsers
 # take the TP_printk from the /include/trace/events dir
 # syntax is event_name, printk, printk_args...
 events_desc = [
@@ -29,12 +30,8 @@ events_desc = [
     ('irq_handler_exit', 'irq=%d ret=%s','irq','ret'),
     ('workqueue_execution','thread=%s func=%s\\+%s/%s','thread','func','func_offset','func_size'),
     ('workqueue_execution','thread=%s func=%s','thread','func'),
-    ('wakelock_lock',   'name=%s type=%d', 'name', 'type'),
-    ('wakelock_unlock',   'name=%s', 'name'),
-    ('runtime_pm_status',   'driver=%s dev=%s status=%s', 'driver','dev','status'),
-    ('runtime_pm_usage',   'driver=%s dev=%s usage=%d', 'driver','dev','usage'),
     ]
-
+events_desc += get_plugins_additional_ftrace_parsers()
 # pre process our descriptions to transform it into re
 events_re = {}
 num_func = 0

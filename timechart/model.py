@@ -8,13 +8,13 @@ from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
     DelegatesTo, Int, Long, Enum, Color, List, Bool, CArray, Property, cached_property, String, Button
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
 from enthought.enable.colors import ColorTrait
-
-from timechart import colors
 from timechart.process_table import process_table_editor
+from timechart import colors
 
 import numpy
-import sys 
+import sys
 
+c_state_table = ["C0","C1","C2","C4","C6","S0i1","S0i3"]
 def _pretty_time(time):
     if time > 1000000:
         time = time/1000000.
@@ -26,15 +26,16 @@ def _pretty_time(time):
 
 class tcGeneric(HasTraits):
     name = String
-    start_ts = CArray 
-    end_ts = CArray 
-    types = CArray 
+    start_ts = CArray
+    end_ts = CArray
+    linenumbers = CArray
+    types = CArray
     has_comments = Bool(True)
     total_time = Property(Int)
     max_types = Property(Int)
     max_latency = Property(Int)
     max_latency_ts = Property(CArray)
-    
+
     @cached_property
     def _get_total_time(self):
         return sum(self.end_ts-self.start_ts)
@@ -85,22 +86,18 @@ class tcProcess(tcGeneric):
     selection_pc = Float(0)
     comm = String
     cpus = CArray
-    comments = CArray
+    comments = []
     has_comments = Bool(True)
     show = Bool(True)
     process_type = String
     project = None
     @cached_property
     def _get_name(self):
-        if self.process_type=="runtime_pm":
-            return "%s:%d"%(self.comm,self.pid)
         return "%s:%d (%s)"%(self.comm,self.pid, _pretty_time(self.total_time))
 
     def get_comment(self,i):
-        if self.process_type=="runtime_pm":
-            return colors.get_colorname_by_id(self.types[i])[len("rpm_"):]
-        elif len(self.comments)>i:
-            return "%d"%(self.comments[i])
+        if len(self.comments)>i:
+            return "%s"%(self.comments[int(i)])
         elif len(self.cpus)>i:
             return "%d"%(self.cpus[i])
         else:
@@ -141,7 +138,7 @@ class tcProject(HasTraits):
     power_event = CArray
     num_cpu = Property(Int,depends_on='c_states')
     num_process = Property(Int,depends_on='process')
-    traits_view = View( 
+    traits_view = View(
         HGroup(Item('show'), Item('hide') ,Item('selectall',label='all'),show_labels  = False),
         Item( 'processes',
               show_label  = False,
@@ -189,7 +186,7 @@ class tcProject(HasTraits):
                 tot += time
                 stats[t] = time
             stats[0] = (end-start)-tot
-            l.append(stats)  
+            l.append(stats)
         return l
     def process_stats(self,start,end):
         fact = 100./(end-start)
@@ -215,14 +212,13 @@ class tcProject(HasTraits):
                 if high_line==-1 or high_line > hl:
                     high_line = hl
         return self.get_partial_text(self.filename, low_line, high_line)
-
 ######### generic parsing part ##########
 
 
     def generic_find_process(self,pid,comm,ptype):
         if self.tmp_process.has_key((pid,comm)):
             return self.tmp_process[(pid,comm)]
-        tmp = {'type':ptype,'comm':comm,'pid':pid,'start_ts':[],'end_ts':[],'types':[],'cpus':[],'comments':[]}
+        tmp = {'type':ptype,'comm':comm,'pid':pid,'start_ts':[],'end_ts':[],'types':[],'cpus':[],'comments':[],'linenumbers':[]}
         if not (pid==0 and comm =="swapper"):
             self.tmp_process[(pid,comm)] = tmp
         return tmp
@@ -241,10 +237,11 @@ class tcProject(HasTraits):
                 p = p_stack[-1]
                 if len(p['start_ts'])>len(p['end_ts']):
                     p['end_ts'].append(event.timestamp)
-                # mark old process to wait for cpu 
+                # mark old process to wait for cpu
                 p['start_ts'].append(int(event.timestamp))
-                p['types'].append(colors.get_color_id("waiting_for_cpu")) 
+                p['types'].append(colors.get_color_id("waiting_for_cpu"))
                 p['cpus'].append(event.common_cpu)
+                p['linenumbers'].append(event.linenumber)
                 p_stack.append(process)
             else:
                 self.cur_process[event.common_cpu] = [process]
@@ -252,6 +249,8 @@ class tcProject(HasTraits):
         process['start_ts'].append(event.timestamp)
         process['types'].append(colors.get_color_id("running"))
         process['cpus'].append(event.common_cpu)
+        process['linenumbers'].append(event.linenumber)
+
 
     def generic_process_end(self,process,event, build_p_stack=True):
         if process['comm']=='swapper' and process['pid']==0:
@@ -275,7 +274,7 @@ class tcProject(HasTraits):
                     self.tmp_process[(p['pid'],p['comm'])] = p
                     if len(p['start_ts'])>len(p['end_ts']):
                         p['end_ts'].append(event.timestamp)
-                    
+
                 if p_stack:
                     p = p_stack[-1]
                     if len(p['start_ts'])>len(p['end_ts']):
@@ -284,7 +283,8 @@ class tcProject(HasTraits):
                     p['start_ts'].append(event.timestamp)
                     p['types'].append(colors.get_color_id("running"))
                     p['cpus'].append(event.common_cpu)
-        
+                    p['linenumbers'].append(event.linenumber)
+
     def do_event_sched_switch(self,event):
         prev = self.generic_find_process(event.prev_pid,event.prev_comm,"user_process")
         next = self.generic_find_process(event.next_pid,event.next_comm,"user_process")
@@ -295,9 +295,10 @@ class tcProject(HasTraits):
             prev['start_ts'].append(event.timestamp)
             prev['types'].append(colors.get_color_id("waiting_for_cpu"))
             prev['cpus'].append(event.common_cpu)
+            prev['linenumbers'].append(event.linenumber)
 
         self.generic_process_start(next,event)
-        
+
     def do_event_sched_wakeup(self,event):
         p_stack = self.cur_process[event.common_cpu]
         if p_stack:
@@ -330,38 +331,18 @@ class tcProject(HasTraits):
         event.irq = event.vec
         event.name = ""
         return self.do_event_irq_handler_exit(event,"soft")
-        
-    def do_event_spi_sync(self,event):
-        process = self.generic_find_process(0,"spi:%s"%(event.caller),"spi")
-        self.last_spi.append(process)
-        self.generic_process_start(process,event,False)
-    def do_event_spi_complete(self,event):
-        process = self.last_spi.pop(0)
-        self.generic_process_end(process,event,False)
-    def do_event_spi_async(self,event):
-        if event.caller != 'spi_sync':
-            self.do_event_spi_sync(event,False)
-
-    def do_event_wakelock_lock(self,event):
-        process = self.generic_find_process(0,"wakelock:%s"%(event.name),"wakelock")
-        self.generic_process_start(process,event,False)
-        self.wake_events.append(((event.common_comm,event.common_pid),(process['comm'],process['pid']),event.timestamp))
-
-    def do_event_wakelock_unlock(self,event):
-        process = self.generic_find_process(0,"wakelock:%s"%(event.name),"wakelock")
-        self.generic_process_end(process,event,False)
-        self.wake_events.append(((event.common_comm,event.common_pid),(process['comm'],process['pid']),event.timestamp))
 
     def do_event_workqueue_execution(self,event):
         process = self.generic_find_process(0,"work:%s"%(event.func),"work")
         self.generic_process_start(process,event)
         self.generic_process_end(process,event)
-        
+
     def do_event_power_frequency(self,event):
         self.ensure_cpu_allocated(event.common_cpu)
         if event.type==2:# p_state
             tc = self.tmp_p_states[event.common_cpu]
             tc['start_ts'].append(event.timestamp)
+            tc['linenumbers'].append(event.linenumber)
             tc['types'].append(event.state)
 
     def do_event_power_start(self,event):
@@ -375,9 +356,9 @@ class tcProject(HasTraits):
                     print "warning: missed power_end"
                 if self.missed_power_end == 10:
                     print "warning: missed power_end: wont warn anymore!"
-                    
             tc['start_ts'].append(event.timestamp)
-            tc['types'].append(colors.get_color_id("C%d"%(event.state)))
+            tc['types'].append(colors.get_color_id(c_state_table[int(event.state)]))
+            tc['linenumbers'].append(event.linenumber)
 
     def do_event_power_end(self,event):
         self.ensure_cpu_allocated(event.common_cpu)
@@ -386,26 +367,6 @@ class tcProject(HasTraits):
         if len(tc['start_ts'])>len(tc['end_ts']):
             tc['end_ts'].append(event.timestamp)
 
-    def do_event_runtime_pm_status(self,event):
-        if self.first_ts == 0:
-            self.first_ts = event.timestamp-1
-
-        p = self.generic_find_process(0,"runtime_pm:%s %s"%(event.driver,event.dev),"runtime_pm")
-        if len(p['start_ts'])>len(p['end_ts']):
-            p['end_ts'].append(event.timestamp)
-        if event.status!="SUSPENDED":
-            p['start_ts'].append(int(event.timestamp))
-            p['types'].append(colors.get_color_id("rpm_%s"%(event.status.lower())))
-            p['cpus'].append(event.common_cpu)
-
-    def do_event_runtime_pm_usage(self,event):
-        p = self.generic_find_process(0,"runtime_pm_usage:%s %s"%(event.driver,event.dev),"runtime_pm")
-        if len(p['start_ts'])>len(p['end_ts']):
-            p['end_ts'].append(event.timestamp)
-        if event.usage!=0:
-            p['start_ts'].append(int(event.timestamp))
-            p['types'].append(colors.get_color_id("rpm_usage=%d"%(event.usage)))
-            p['cpus'].append(event.common_cpu)
 
 
     def do_function_default(self,event):
@@ -414,12 +375,14 @@ class tcProject(HasTraits):
         self.generic_process_end(process,event)
 
     def do_event_default(self,event):
-        process = self.generic_find_process(0,"event:%s"%(event.event),"event")
+        event.name = event.event.split(":")[0]
+        process = self.generic_find_process(0,"event:%s"%(event.name),"event")
         self.generic_process_start(process,event)
+        process['comments'].append(event.event)
         self.generic_process_end(process,event)
 
 
-    def start_parsing(self):
+    def start_parsing(self, get_partial_text):
         # we build our data into python data formats, who are resizeable
         # once everything is parsed, we will transform it into numpy array, for fast access
         self.tmp_c_states = []
@@ -431,12 +394,24 @@ class tcProject(HasTraits):
         self.last_irq={}
         self.last_spi=[]
         self.missed_power_end = 0
+        self.get_partial_text = get_partial_text
         self.methods = {}
         for name in dir(self):
             method = getattr(self, name)
             if callable(method):
                 self.methods[name] = method
-
+        from timechart import plugin
+        colors.parse_colors(plugin.get_plugins_additional_colors())
+        self.plugin_methods = plugin.get_plugins_additional_methods()
+        self.process_types = {
+            "irq":(tcProcess, plugin.IRQ_CLASS),
+            "softirq":(tcProcess, plugin.IRQ_CLASS),
+            "work":(tcProcess, plugin.WORK_CLASS),
+            "function":(tcProcess, plugin.MISC_TRACES_CLASS),
+            "event":(tcProcess, plugin.MISC_TRACES_CLASS),
+            "kernel_process":(tcProcess, plugin.KERNEL_CLASS),
+            "user_process":(tcProcess, plugin.KERNEL_CLASS)}
+        self.process_types.update(plugin.get_plugins_additional_process_types())
     def finish_parsing(self):
         #put generated data in unresizable numpy format
         c_states = []
@@ -448,6 +423,7 @@ class tcProject(HasTraits):
             t.start_ts = numpy.array(tc['start_ts'])
             t.end_ts = numpy.array(tc['end_ts'])
             t.types = numpy.array(tc['types'])
+            t.linenumbers = numpy.array(tc['linenumbers'])
             c_states.append(t)
             i+=1
         self.c_states=c_states
@@ -458,6 +434,7 @@ class tcProject(HasTraits):
             t.start_ts = numpy.array(tc['start_ts'])
             t.end_ts = numpy.array(tc['end_ts'])
             t.types = numpy.array(tc['types'])
+            t.linenumbers = numpy.array(tc['linenumbers'])
             i+=1
             p_states.append(t)
         self.wake_events = numpy.array(self.wake_events,dtype=[('waker',tuple),('wakee',tuple),('time','uint64')])
@@ -469,24 +446,27 @@ class tcProject(HasTraits):
             if len(tc['end_ts'])>0 and last_ts < tc['end_ts'][-1]:
                 last_ts = tc['end_ts'][-1]
         for pid,comm in self.tmp_process:
-            t = tcProcess(pid=pid,comm=comm,project=self)
             tc = self.tmp_process[pid,comm]
+            if self.process_types.has_key(tc['type']):
+                klass, order = self.process_types[tc['type']]
+                t = klass(pid=pid,comm=comm,project=self)
+            else:
+                t = tcProcess(pid=pid,comm=comm,project=self)
             while len(tc['start_ts'])>len(tc['end_ts']):
                 tc['end_ts'].append(last_ts)
             t.start_ts = numpy.array(tc['start_ts'])
             t.end_ts = numpy.array(tc['end_ts'])
             t.types = numpy.array(tc['types'])
             t.cpus = numpy.array(tc['cpus'])
-            t.comments = numpy.array(tc['comments'])
+            t.comments = tc['comments'] #numpy.array(tc['comments'])
+            t.linenumbers = numpy.array(tc['linenumbers'])
             t.process_type = tc["type"]
             processes.append(t)
         def cmp_process(x,y):
             # sort process by type, pid, comm
             def type_index(t):
-                order = ["runtime_pm","wakelock","irq","softirq","work",
-                         "function","event","spi","kernel_process","user_process"]
                 try:
-                    return order.index(t)
+                    return self.process_types[t][1]
                 except ValueError:
                     return len(order)+1
             c = cmp(type_index(x.process_type),type_index(y.process_type))
@@ -506,17 +486,19 @@ class tcProject(HasTraits):
         self.tmp_process = {}
 
     def ensure_cpu_allocated(self,cpu):
-        # ensure we have enough per_cpu p/s_states timecharts
+        # ensure we have enough per_cpu p/c_states timecharts
         while len(self.tmp_c_states)<=cpu:
-            self.tmp_c_states.append({'start_ts':[],'end_ts':[],'types':[]})
+            self.tmp_c_states.append({'start_ts':[],'end_ts':[],'types':[],'linenumbers':[]})
         while len(self.tmp_p_states)<=cpu:
-            self.tmp_p_states.append({'start_ts':[],'end_ts':[],'types':[]})
-                                     
+            self.tmp_p_states.append({'start_ts':[],'end_ts':[],'types':[],'linenumbers':[]})
+
     def handle_trace_event(self,event):
         callback = "do_event_"+event.event
         if event.event=='function':
             callback = "do_event_"+event.callee
-        if self.methods.has_key(callback):
+        if self.plugin_methods.has_key(callback):
+            self.plugin_methods[callback](self,event)
+        elif self.methods.has_key(callback):
             self.methods[callback](event)
         elif event.event=='function':
             self.do_function_default(event)

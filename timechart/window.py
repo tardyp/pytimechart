@@ -65,9 +65,6 @@ class tcWindow(HasTraits):
     def about(self):
         pass
 
-from timechart.backends.perf import detect_perf
-from timechart.backends.ftrace import detect_ftrace
-from timechart.backends.tracecmd import detect_tracecmd
 
 prof = 0
 
@@ -84,6 +81,9 @@ def open_dialog():
     return rv
     
 def open_file(fn=None):
+    from timechart.backends.perf import detect_perf
+    from timechart.backends.ftrace import detect_ftrace
+    from timechart.backends.tracecmd import detect_tracecmd
     if fn == None:
         fn = open_dialog()
         if fn == None:
