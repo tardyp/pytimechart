@@ -169,16 +169,25 @@ def parse_ftrace(filename,callback):
             callback(Event(event))
             continue
     fid.close()
+def get_partial_text(fn,start,end):
+    text = ""
+    fid = open(fn,"r")
+    linenumber = 0
+    for line in fid:
+        linenumber+=1
+        if linenumber >= start and linenumber <= end:
+            text+=line
+    return text
 
 def load_ftrace(fn):
     from timechart.model import tcProject
     proj = tcProject()
     proj.filename = fn
-    proj.start_parsing()
+    proj.start_parsing(get_partial_text)
     parse_ftrace(fn,proj.handle_trace_event)
     proj.finish_parsing()
     return proj
-    
+
 
 def detect_ftrace(fn):
     if fn.endswith(".txt"):

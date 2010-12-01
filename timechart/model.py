@@ -200,6 +200,21 @@ class tcProject(HasTraits):
             tot = sum(ends[inds]-starts[inds])
             tc.selection_time = int(tot)
             tc.selection_pc = tot*fact
+    def get_selection_text(self,start,end):
+        low_line = -1
+        high_line = -1
+        for tc in self.processes:
+            low_i = searchsorted(tc.end_ts,start)
+            high_i = searchsorted(tc.start_ts,end)
+            if low_i < len(tc.linenumbers):
+                ll = tc.linenumbers[low_i]
+                if low_line==-1 or low_line > ll:
+                    low_line = ll
+            if high_i < len(tc.linenumbers):
+                hl = tc.linenumbers[high_i]
+                if high_line==-1 or high_line > hl:
+                    high_line = hl
+        return self.get_partial_text(self.filename, low_line, high_line)
 
 ######### generic parsing part ##########
 

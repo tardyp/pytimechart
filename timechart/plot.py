@@ -61,17 +61,32 @@ class TimeChartOptions(HasTraits):
     def _auto_zoom_y_delayed(self):
         self.plot.auto_zoom_y()
         self.auto_zoom_timer.Stop()
+class TextView(HasTraits):
+    text = Str
+    def __init__(self,text,title):
+        self.text = text
+        self.trait_view().title = title
 
+    traits_view = View(
+            Item('text',style="custom",show_label=False),
+            resizable = True,
+            width = 1024,
+            height = 600,
+            )
 class RangeSelectionTools(HasTraits):
     time = Str
     c_states = Str
     zoom = Button()
+    trace_text = Button()
     traits_view = View(VGroup(
             Item('time'),
             Item('c_states',style="custom"),
             Item('zoom'),
+            Item('trace_text'),
             label='Selection Infos'
             ))
+    start = 0
+    end = 0
     def connect(self,plot):
         self.plot = plot
         plot.range_selection.on_trait_change(self._selection_update_handler, "selection")
@@ -89,6 +104,10 @@ class RangeSelectionTools(HasTraits):
         self.plot.range_selection.deselect()
         self.plot.invalidate_draw()
         self.plot.request_redraw()
+    def _trace_text_changed(self):
+        text = self.plot.proj.get_selection_text(self.start,self.end)
+        text_view = TextView(text,"%s:[%d:%d]"%(self.plot.proj.filename,self.start,self.end))
+        text_view.edit_traits()
 
     def _selection_updated_delayed(self):
         c_states_stats = self.plot.proj.c_states_stats(self.start,self.end)
@@ -101,7 +120,6 @@ class RangeSelectionTools(HasTraits):
                 part = cpu_stat[cstate]
                 tmp += "C%d:%dus %02.f%%\n"%(cstate,part,part*100/(self.end-self.start))
         self.c_states = tmp
-        print "stats",self.start,self.end
         self.plot.proj.process_stats(self.start,self.end)
         self._timer.Stop()
         pass
