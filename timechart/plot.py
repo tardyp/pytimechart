@@ -11,9 +11,9 @@ from enthought.chaco.label import Label
 from enthought.kiva.traits.kiva_font_trait import KivaFont
 from enthought.enable.api import black_color_trait, KeySpec
 
-from timechart.model import tcProject
-from timechart.colors import get_aggcolor_by_id
-from timechart import tools
+from model import tcProject
+from colors import get_aggcolor_by_id
+import tools
 from numpy import linspace,arange,amin,amax
 from math import log
 from numpy import array, ndarray,argmax,searchsorted,mean

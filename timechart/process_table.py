@@ -1,4 +1,5 @@
-from timechart import colors
+#import timechart.colors as colors
+import colors
 from enthought.traits.ui.table_column   import ObjectColumn, ExpressionColumn
 from enthought.traits.ui.api import TableEditor
 

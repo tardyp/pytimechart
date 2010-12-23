@@ -26,5 +26,7 @@ if __name__ == '__main__':
         else:
             gui.start_event_loop()
 
+import timechart.py2exe_wximports
+
 ##### EOF #####################################################################
 

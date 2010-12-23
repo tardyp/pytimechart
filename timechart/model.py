@@ -8,8 +8,8 @@ from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
     DelegatesTo, Int, Long, Enum, Color, List, Bool, CArray, Property, cached_property, String, Button
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
 from enthought.enable.colors import ColorTrait
-from timechart.process_table import process_table_editor
-from timechart import colors
+from process_table import process_table_editor
+import colors
 
 import numpy
 import sys
@@ -400,7 +400,7 @@ class tcProject(HasTraits):
             method = getattr(self, name)
             if callable(method):
                 self.methods[name] = method
-        from timechart import plugin
+        import plugin
         colors.parse_colors(plugin.get_plugins_additional_colors())
         self.plugin_methods = plugin.get_plugins_additional_methods()
         self.process_types = {

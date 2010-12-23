@@ -38,8 +38,9 @@ def get_plugins_additional_ftrace_parsers():
     for p in plugin_list:
         s += p.additional_ftrace_parsers
     return s
-import timechart.plugins,os
-for f in os.listdir(os.path.abspath(timechart.plugins.__path__[0])):
+import plugins
+import os
+for f in os.listdir(os.path.abspath(plugins.__path__[0])):
     module_name, ext = os.path.splitext(f)
     if (not module_name.startswith(".")) and ext == '.py' and module_name != "__init__":
         module = __import__("timechart.plugins."+module_name)

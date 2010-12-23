@@ -2,8 +2,8 @@ import sys,os
 from enthought.traits.api import  HasTraits,Str
 from enthought.traits.ui.api import InstanceEditor,Item,View,HSplit,VSplit,Handler, StatusItem
 from enthought.traits.ui.menu import Action, MenuBar, ToolBar, Menu
-from timechart.model import tcProject
-from timechart.plot import tcPlot, create_timechart_container
+from model import tcProject
+from plot import tcPlot, create_timechart_container
 from enthought.enable.component_editor import ComponentEditor
 
 # workaround bug in kiva's font manager that fails to find a correct default font on linux
@@ -79,11 +79,11 @@ def open_dialog():
 
     dlg.Destroy()
     return rv
-    
+
 def open_file(fn=None):
-    from timechart.backends.perf import detect_perf
-    from timechart.backends.ftrace import detect_ftrace
-    from timechart.backends.tracecmd import detect_tracecmd
+    from backends.perf import detect_perf
+    from backends.ftrace import detect_ftrace
+    from backends.tracecmd import detect_tracecmd
     if fn == None:
         fn = open_dialog()
         if fn == None:
