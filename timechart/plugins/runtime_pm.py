@@ -11,6 +11,7 @@ class tcRuntimePM(tcProcess):
 class runtime_pm(plugin):
     additional_colors = """
 runtime_pm_bg		#e5bebe
+rpm_usage=-1		#ff0000
 rpm_usage=0		#eeeeee
 rpm_usage=1		#FA8072
 rpm_usage=2		#FFA500
@@ -49,7 +50,12 @@ rpm_active		#ee0000
             p['end_ts'].append(event.timestamp)
         if event.usage!=0:
             p['start_ts'].append(int(event.timestamp))
-            p['types'].append(colors.get_color_id("rpm_usage=%d"%(event.usage)))
+            usagecolor = event.usage
+            if usagecolor<0:
+                usagecolor = -1
+            if usagecolor>6:
+                usagecolor = 6
+            p['types'].append(colors.get_color_id("rpm_usage=%d"%(usagecolor)))
             p['cpus'].append(event.common_cpu)
             p['linenumbers'].append(event.linenumber)
 
