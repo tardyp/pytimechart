@@ -15,6 +15,10 @@ menu_select		#ee0000
         }
     @staticmethod
     def do_event_menu_select(proj,event):
+	try:
+	   a= event.predicted
+	except AttributeError:
+	   return
         found = 0
         i = 0
         while not found:
