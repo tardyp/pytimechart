@@ -50,7 +50,7 @@ for event in events_desc:
         format = printk[idx+1]
         if format=='d':
             filt=int
-            regex="([0-9]+)"
+            regex="([-0-9]+)"
             func+=" event['%s'] = int(group[%d])\n"%(arg,i)
         elif format=='s':
             filt=str
@@ -69,6 +69,11 @@ for event in events_desc:
 class Event:
     def __init__(self,event):
         self.__dict__=event
+    def __repr__(self):
+        ret = ""
+        for k in self.__dict__:
+            ret += "%s: %s, "%(k,str(self.__dict__[k]))
+        return ret
 class TraceCmdEventWrapper:
     def __init__(self,event):
         self.tracecmd_event = event
