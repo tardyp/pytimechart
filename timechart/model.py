@@ -14,7 +14,6 @@ import colors
 import numpy
 import sys
 
-c_state_table = ["C0","C1","C2","C4","C6","S0i1","S0i3"]
 def _pretty_time(time):
     if time > 1000000:
         time = time/1000000.
@@ -336,38 +335,6 @@ class tcProject(HasTraits):
         process = self.generic_find_process(0,"work:%s"%(event.func),"work")
         self.generic_process_start(process,event)
         self.generic_process_end(process,event)
-
-    def do_event_power_frequency(self,event):
-        self.ensure_cpu_allocated(event.common_cpu)
-        if event.type==2:# p_state
-            tc = self.tmp_p_states[event.common_cpu]
-            tc['start_ts'].append(event.timestamp)
-            tc['linenumbers'].append(event.linenumber)
-            tc['types'].append(event.state)
-
-    def do_event_power_start(self,event):
-        self.ensure_cpu_allocated(event.common_cpu)
-        if event.type==1:# c_state
-            tc = self.tmp_c_states[event.common_cpu]
-            if len(tc['start_ts'])>len(tc['end_ts']):
-                tc['end_ts'].append(event.timestamp)
-                self.missed_power_end +=1
-                if self.missed_power_end < 10:
-                    print "warning: missed power_end"
-                if self.missed_power_end == 10:
-                    print "warning: missed power_end: wont warn anymore!"
-            tc['start_ts'].append(event.timestamp)
-            tc['types'].append(colors.get_color_id(c_state_table[int(event.state)]))
-            tc['linenumbers'].append(event.linenumber)
-
-    def do_event_power_end(self,event):
-        self.ensure_cpu_allocated(event.common_cpu)
-
-        tc = self.tmp_c_states[event.common_cpu]
-        if len(tc['start_ts'])>len(tc['end_ts']):
-            tc['end_ts'].append(event.timestamp)
-
-
 
     def do_function_default(self,event):
         process = self.generic_find_process(0,"kernel function:%s"%(event.callee),"function")

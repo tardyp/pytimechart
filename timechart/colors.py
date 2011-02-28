@@ -14,15 +14,6 @@ event_bg
 kernel_process_bg       #F0F5A3
 user_process_bg       	#E1DFFF
 selected_bg		#ACD7E6
-C0			#000000
-C1			#bbbbff
-C2			#7777ff
-C3			#5555ff
-C4			#3333ff
-C5			#1111ff
-C6			#0000ff
-S0i3			#0011ff
-S0i1			#0022ff
 idle			#000000
 waiting_for_cpu		#ffff88
 running			#555555
