@@ -38,7 +38,6 @@ S0i1			#0022ff
                     print "warning: missed cpu_idle end: wont warn anymore!"
             tc['start_ts'].append(event.timestamp)
             tc['types'].append(colors.get_color_id(c_state_table[int(event.state)]))
-            tc['linenumbers'].append(event.linenumber)
         else :
             if len(tc['start_ts'])>len(tc['end_ts']):
                 tc['end_ts'].append(event.timestamp)
@@ -57,7 +56,6 @@ S0i1			#0022ff
                     print "warning: missed power_end: wont warn anymore!"
             tc['start_ts'].append(event.timestamp)
             tc['types'].append(colors.get_color_id(c_state_table[int(event.state)]))
-            tc['linenumbers'].append(event.linenumber)
 
     @staticmethod
     def do_event_power_end(self,event):
@@ -73,7 +71,6 @@ S0i1			#0022ff
         if event.type==2:# p_state
             tc = self.tmp_p_states[event.common_cpu]
             tc['start_ts'].append(event.timestamp)
-            tc['linenumbers'].append(event.linenumber)
             tc['types'].append(event.state)
 
 plugin_register(cpu_idle)

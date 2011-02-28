@@ -32,14 +32,12 @@ menu_select		#ee0000
         p['end_ts'].append(int(event.timestamp+event.predicted))
         p['types'].append(colors.get_color_id("menu_select"))
         p['cpus'].append(event.common_cpu)
-        p['linenumbers'].append(event.linenumber)
 
         p = p2
         p['start_ts'].append(int(event.timestamp))
         p['end_ts'].append(int(event.timestamp+event.expected))
         p['types'].append(colors.get_color_id("menu_select"))
         p['cpus'].append(event.common_cpu)
-        p['linenumbers'].append(event.linenumber)
 plugin_register(menu_select)
 
 menu_select_patch="""
