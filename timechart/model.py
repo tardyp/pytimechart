@@ -3,7 +3,7 @@
 
 from numpy import amin, amax, arange, searchsorted, sin, pi, linspace
 import numpy as np
-
+import traceback
 from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
     DelegatesTo, Int, Long, Enum, Color, List, Bool, CArray, Property, cached_property, String, Button
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
@@ -497,8 +497,21 @@ class tcProject(HasTraits):
         if event.event=='function':
             callback = "do_event_"+event.callee
         if self.plugin_methods.has_key(callback):
-            self.plugin_methods[callback](self,event)
-        elif self.methods.has_key(callback):
+            try:
+                self.plugin_methods[callback](self,event)
+                return
+            except AttributeError:
+                if not hasattr(self.plugin_methods[callback],"num_exc"):
+                    self.plugin_methods[callback].num_exc = 0
+                self.plugin_methods[callback].num_exc += 1
+                if self.plugin_methods[callback].num_exc <10:
+                    print "bug in ",self.plugin_methods[callback],"still continue.."
+                    traceback.print_exc()
+                    print event
+                if self.plugin_methods[callback].num_exc == 10:
+                    print self.plugin_methods[callback], "is too buggy, disabling, please report bug!"
+                    del self.plugin_methods[callback]
+        if self.methods.has_key(callback):
             self.methods[callback](event)
         elif event.event=='function':
             self.do_function_default(event)
