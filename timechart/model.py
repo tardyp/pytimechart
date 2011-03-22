@@ -451,7 +451,7 @@ class tcProject(HasTraits):
         self.linenumbers.append(event.linenumber)
         self.timestamps.append(event.timestamp)
         if event.event=='function':
-            callback = "do_event_"+event.callee
+            callback = "do_function_"+event.callee
         if self.plugin_methods.has_key(callback):
             try:
                 self.plugin_methods[callback](self,event)
