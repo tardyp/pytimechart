@@ -41,7 +41,6 @@ rpm_active		#ee0000
             p['start_ts'].append(int(event.timestamp))
             p['types'].append(colors.get_color_id("rpm_%s"%(event.status.lower())))
             p['cpus'].append(event.common_cpu)
-            p['linenumbers'].append(event.linenumber)
 
     @staticmethod
     def do_event_runtime_pm_usage(proj, event):
@@ -57,6 +56,5 @@ rpm_active		#ee0000
                 usagecolor = 6
             p['types'].append(colors.get_color_id("rpm_usage=%d"%(usagecolor)))
             p['cpus'].append(event.common_cpu)
-            p['linenumbers'].append(event.linenumber)
 
 plugin_register(runtime_pm)
