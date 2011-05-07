@@ -4,6 +4,7 @@
 from numpy import amin, amax, arange, searchsorted, sin, pi, linspace
 import numpy as np
 import traceback
+import re
 from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
     DelegatesTo, Int, Long, Enum, Color, List, Bool, CArray, Property, cached_property, String, Button
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
@@ -129,8 +130,11 @@ class tcProject(HasTraits):
     p_states = List(tcGeneric)
     processes = List(tcProcess)
     selected =  List(tcProcess)
+    filtered_processes = List(tcProcess)
     show = Button()
     hide = Button()
+    filter =  Str("")
+    filter_invalid = Property(depends_on="filter")
     selectall = Button()
     filename = Str("")
     power_event = CArray
@@ -138,13 +142,28 @@ class tcProject(HasTraits):
     num_process = Property(Int,depends_on='process')
     traits_view = View(
         HGroup(Item('show'), Item('hide') ,Item('selectall',label='all'),show_labels  = False),
-        Item( 'processes',
+        VGroup(Item('filter',invalid="filter_invalid")),
+        Item( 'filtered_processes',
               show_label  = False,
               height=40,
               editor      = process_table_editor
               )
         )
     first_ts = 0
+    def _get_filter_invalid(self):
+        try:
+            r = re.compile(self.filter)
+        except:
+            return True
+        return False
+    def _filter_changed(self):
+        try:
+            r = re.compile(self.filter)
+        except:
+            return False
+        self.filtered_processes = filter(lambda p:r.search(p.comm), self.processes)
+    def _processes_changed(self):
+        self._filter_changed()
     def _show_changed(self):
         for i in self.selected:
             i.show = True
