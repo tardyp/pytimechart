@@ -412,6 +412,7 @@ def create_timechart_container(project):
     project.on_trait_change(plot.invalidate, "show")
     project.on_trait_change(plot.invalidate, "selected")
     project.on_trait_change(plot.invalidate, "hide")
+    project.on_trait_change(plot.invalidate, "invert")
     max_process = 50
     if value_range.high>max_process:
         value_range.low = value_range.high-max_process

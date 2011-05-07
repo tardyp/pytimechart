@@ -136,12 +136,13 @@ class tcProject(HasTraits):
     filter =  Str("")
     filter_invalid = Property(depends_on="filter")
     selectall = Button()
+    invert = Button()
     filename = Str("")
     power_event = CArray
     num_cpu = Property(Int,depends_on='c_states')
     num_process = Property(Int,depends_on='process')
     traits_view = View(
-        HGroup(Item('show'), Item('hide') ,Item('selectall',label='all'),show_labels  = False),
+        HGroup(Item('show'), Item('hide'), Item('invert',label='inv') ,Item('selectall',label='all'),show_labels  = False),
         VGroup(Item('filter',invalid="filter_invalid")),
         Item( 'filtered_processes',
               show_label  = False,
@@ -175,6 +176,9 @@ class tcProject(HasTraits):
             self.selected = []
         else:
             self.selected = self.processes
+    def _invert_changed(self):
+        for i in self.filtered_processes:
+            i.show = not i.show
 
     @cached_property
     def _get_num_cpu(self):
