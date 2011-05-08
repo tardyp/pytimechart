@@ -131,18 +131,14 @@ class tcProject(HasTraits):
     processes = List(tcProcess)
     selected =  List(tcProcess)
     filtered_processes = List(tcProcess)
-    show = Button()
-    hide = Button()
+    plot_redraw = Long()
     filter =  Str("")
     filter_invalid = Property(depends_on="filter")
-    selectall = Button()
-    invert = Button()
     filename = Str("")
     power_event = CArray
     num_cpu = Property(Int,depends_on='c_states')
     num_process = Property(Int,depends_on='process')
     traits_view = View(
-        HGroup(Item('show'), Item('hide'), Item('invert',label='inv') ,Item('selectall',label='all'),show_labels  = False),
         VGroup(Item('filter',invalid="filter_invalid")),
         Item( 'filtered_processes',
               show_label  = False,
@@ -165,20 +161,25 @@ class tcProject(HasTraits):
         self.filtered_processes = filter(lambda p:r.search(p.comm), self.processes)
     def _processes_changed(self):
         self._filter_changed()
-    def _show_changed(self):
+    def _on_show(self):
         for i in self.selected:
             i.show = True
-    def _hide_changed(self):
+        self.plot_redraw +=1
+    def _on_hide(self):
         for i in self.selected:
             i.show = False
-    def _selectall_changed(self):
+        self.plot_redraw +=1
+    def _on_select_all(self):
         if self.selected == self.processes:
             self.selected = []
         else:
             self.selected = self.processes
-    def _invert_changed(self):
+        self.plot_redraw +=1
+
+    def _on_invert(self):
         for i in self.filtered_processes:
             i.show = not i.show
+        self.plot_redraw +=1
 
     @cached_property
     def _get_num_cpu(self):

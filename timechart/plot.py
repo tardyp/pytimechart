@@ -76,13 +76,9 @@ class TextView(HasTraits):
 class RangeSelectionTools(HasTraits):
     time = Str
     c_states = Str
-    zoom = Button()
-    trace_text = Button()
     traits_view = View(VGroup(
             Item('time'),
             Item('c_states',style="custom"),
-            Item('zoom'),
-            Item('trace_text'),
             label='Selection Infos'
             ))
     start = 0
@@ -98,13 +94,18 @@ class RangeSelectionTools(HasTraits):
             time = self.end-self.start
             self.time = "%d.%03d %03ds"%(time/1000000,(time/1000)%1000,time%1000)
             self._timer.Start()
-    def _zoom_changed(self):
+    def _on_zoom(self):
         self.plot.index_range.high = self.end
         self.plot.index_range.low = self.start
         self.plot.range_selection.deselect()
         self.plot.invalidate_draw()
         self.plot.request_redraw()
-    def _trace_text_changed(self):
+    def _on_unzoom(self):
+        self.plot.index_range.high = self.plot.highest_i
+        self.plot.index_range.low = self.plot.lowest_i
+        self.plot.invalidate_draw()
+        self.plot.request_redraw()
+    def _on_trace_text(self):
         text = self.plot.proj.get_selection_text(self.start,self.end)
         text_view = TextView(text,"%s:[%d:%d]"%(self.plot.proj.filename,self.start,self.end))
         text_view.edit_traits()
@@ -137,7 +138,8 @@ class tcPlot(BarPlot):
     title_spacing = Trait('auto', 'auto', Float)
     # The color of the title.
     title_color = ColorTrait("black")
-
+    not_on_screen = List
+    on_screen = List
     options = TimeChartOptions()
     range_tools = RangeSelectionTools()
     redraw_timer = None
@@ -361,6 +363,8 @@ class tcPlot(BarPlot):
                 self._draw_freqchart(gc,tc,label,y)
                 y-=1
         processes_y = {0xffffffffffffffffL:y+1}
+        not_on_screen = []
+        on_screen = []
         for tc in self.proj.processes:
             if tc.total_time < self.options.minimum_time_filter:
                 continue
@@ -369,12 +373,27 @@ class tcPlot(BarPlot):
             processes_y[(tc.comm,tc.pid)] = y+.5
             if self._draw_timechart(gc,tc,label,y) or not self.options.remove_pids_not_on_screen:
                 y-=1
+                on_screen.append(tc)
+            else:
+                not_on_screen.append(tc)
+        self.not_on_screen = not_on_screen
+        self.on_screen = on_screen
         if self.options.show_wake_events:
             self._draw_wake_ups(gc,processes_y)
         gc.restore_state()
         self.min_y = y
         if self.options.auto_zoom_y:
             self.options.auto_zoom_timer.Start()
+    def _on_hide_others(self):
+        for i in self.not_on_screen:
+            i.show = False
+        self.invalidate_draw()
+        self.request_redraw()
+    def _on_hide_onscreen(self):
+        for i in self.on_screen:
+            i.show = False
+        self.invalidate_draw()
+        self.request_redraw()
 
 def create_timechart_container(project):
     """ create a vplotcontainer which connects all the inside plots to synchronize their index_range """
@@ -409,10 +428,9 @@ def create_timechart_container(project):
                          line_color="black",
                          render_style='hold',
                          line_width=1)
-    project.on_trait_change(plot.invalidate, "show")
-    project.on_trait_change(plot.invalidate, "selected")
-    project.on_trait_change(plot.invalidate, "hide")
-    project.on_trait_change(plot.invalidate, "invert")
+    plot.lowest_i = low
+    plot.highest_i = high
+    project.on_trait_change(plot.invalidate, "plot_redraw")
     max_process = 50
     if value_range.high>max_process:
         value_range.low = value_range.high-max_process

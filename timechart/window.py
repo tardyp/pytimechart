@@ -5,6 +5,8 @@ from enthought.traits.ui.menu import Action, MenuBar, ToolBar, Menu
 from model import tcProject
 from plot import tcPlot, create_timechart_container
 from enthought.enable.component_editor import ComponentEditor
+from enthought.pyface.image_resource \
+    import ImageResource
 
 # workaround bug in kiva's font manager that fails to find a correct default font on linux
 if os.name=="posix":
@@ -14,6 +16,51 @@ if os.name=="posix":
     fontManager.defaultFont = fontManager.findfont(font)
 
 
+class tcActionHandler(Handler):
+    handler_list = []
+    def chooseAction(self, UIInfo,name):
+        window = UIInfo.ui.context['object']
+        handler_list = [window, window.project, window.plot, window.plot.options, window.plot.range_tools]
+        for i in handler_list:
+            fn = getattr(i, name, None)
+            if fn is not None:
+                fn()
+
+def _buildAction(desc):
+    exec("tcActionHandler.%s = lambda self,i:self.chooseAction(i,'_on_%s')"%(desc["name"],desc["name"]))
+    return Action(name=desc["name"], action=desc["name"],
+                  tooltip=desc["tooltip"],
+                  image=ImageResource(desc["name"]))
+
+def _create_toolbar_actions():
+    actions = ( 
+        {"name": "show","tooltip":'show selected processes in the timechart'},
+        {"name": "hide","tooltip":'hide selected processes in the timechart'},
+        {"name": "hide_others","tooltip":'Hide process that are not shown at current zoom window'},
+        {"name": "hide_onscreen","tooltip":'Hide process that are shown at current zoom window'},
+        {"name": "invert","tooltip":'invert processes show/hide value.\nThis is useful, when you are fully zoomed,\nand you want to see if you are not missing some valuable info\nin the hidden processes'},
+        {"name": "select_all","tooltip":'select_all/unselect_all'},
+        {"name": "zoom","tooltip":'zoom on the selection'},
+        {"name": "trace_text","tooltip":'show the text trace of the selection'},
+        {"name": "unzoom","tooltip":'unzoom to show the whole trace'},
+        {"name": "view_properties","tooltip":'edit plot view options'},
+        )
+    ret = []
+    for i in actions:
+        ret.append(_buildAction(i))
+    return tuple(ret)
+def _create_menubar_actions():
+    desc = (('&File', ( {"name": "open","tooltip":'open new file into pytimechart'},
+                        {"name": "exit","tooltip":'exit pytimechart'})),
+            ('&View', ( {"name": "view_properties","tooltip":'edit plot view options'},)),
+            ('&Help', ( {"name": "about","tooltip":'about'},)))
+    ret = []
+    for menu in desc:
+        actions = []
+        for action in menu[1]:
+            actions.append(_buildAction(action))
+        ret.append(Menu(*tuple(actions), name = menu[0]))
+    return tuple(ret)
 class tcWindow(HasTraits):
     project = tcProject
     plot = tcPlot
@@ -25,23 +72,11 @@ class tcWindow(HasTraits):
     def get_title(self):
         return "PyTimechart:"+self.project.filename
     # Create an action that exits the application.
-    exit_action = Action(name='e&xit', action='do_action_exit')
-    open_action = Action(name='&Open', action='do_action_open')
-    edit_property_action = Action(name='view properties', action='do_action_edit_properties')
+    exit_action = Action(name='e&xit', action='exit')
+    open_action = Action(name='&Open', action='open')
+    edit_property_action = Action(name='view properties', action='edit_properties')
     about_action = Action(name='About',action='do_action_about')
     status = Str("Welcome to PyTimechart")
-    class myHandler(Handler):
-        def do_actionj_exit(self, UIInfo):
-            view = UIInfo.ui.context['object']
-            view.close()
-        def do_action_open(self, UIInfo):
-            open_file(None)
-        def do_action_about(self, UIInfo):
-            view = UIInfo.ui.context['object']
-            view.about()
-        def do_action_edit_properties(self, UIInfo):
-            view = UIInfo.ui.context['object']
-            view.plot.options.edit_traits()
     traits_view = View(
         HSplit(
             VSplit(
@@ -50,19 +85,25 @@ class tcWindow(HasTraits):
             Item('plot', show_label = False, editor = ComponentEditor()),
                 
             ),
-        toolbar = ToolBar(),
-        menubar = MenuBar(Menu(open_action,exit_action, name = '&File'),
-                          Menu(edit_property_action, name = '&View'),
-                          Menu(about_action, name = '&Help')),
+        toolbar = ToolBar(*_create_toolbar_actions(),
+                           image_size      = ( 24, 24 ),
+                           show_tool_names = False),
+        menubar = MenuBar(*_create_menubar_actions()),
         statusbar = [StatusItem(name='status'),],
         resizable = True,
         width = 1280,
         height = 1024,
-        handler = myHandler()               
+        handler = tcActionHandler()
         )
+    def _on_open(self):
+        open_file(None)
+    def _on_view_properties(self):
+        self.plot.options.edit_traits()
+    def _on_exit(self,n=None):
+        self.close()
     def close(self,n=None):
         sys.exit(0)
-    def about(self):
+    def _on_about(self):
         pass
 
 
