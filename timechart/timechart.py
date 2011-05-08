@@ -8,11 +8,11 @@ from enthought.etsconfig.api import ETSConfig
 ETSConfig.toolkit = 'wx'
 
 from enthought.pyface.api import GUI
-from timechart.window import open_file
+from window import open_file
 
 
 prof=0
-if __name__ == '__main__':
+def main():
     # Create the GUI (this does NOT start the GUI event loop).
     gui = GUI()
     if len(sys.argv)>1:
@@ -25,8 +25,9 @@ if __name__ == '__main__':
             cProfile.run('gui.start_event_loop()','timechart.prof')
         else:
             gui.start_event_loop()
-
-import timechart.py2exe_wximports
+if __name__ == '__main__':
+    main()
+import py2exe_wximports
 
 ##### EOF #####################################################################
 
