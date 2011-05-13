@@ -32,8 +32,9 @@ timer	      		#ee0000
             timer.jitter =  event.now - event.timestamp
     @staticmethod
     def do_event_timer_expire_exit(proj,event):
-        process = timer.timers_dict[event.timer]
-        proj.generic_process_end(process,event,False)
+        if timer.timers_dict.has_key(event.timer):
+            process = timer.timers_dict[event.timer]
+            proj.generic_process_end(process,event,False)
     do_event_hrtimer_expire_entry = do_event_timer_expire_entry
     do_event_hrtimer_expire_exit = do_event_timer_expire_exit
     @staticmethod
