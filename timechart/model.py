@@ -9,6 +9,8 @@ from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
     DelegatesTo, Int, Long, Enum, Color, List, Bool, CArray, Property, cached_property, String, Button
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
 from enthought.enable.colors import ColorTrait
+from enthought.pyface.image_resource import ImageResource
+
 from process_table import process_table_editor
 import colors
 
@@ -131,6 +133,9 @@ class tcProject(HasTraits):
     processes = List(tcProcess)
     selected =  List(tcProcess)
     filtered_processes = List(tcProcess)
+    remove_filter = Button(image=ImageResource("clear.png"),width_padding=0,height_padding=0,style='toolbar')
+    minimum_time_filter = Enum((0,1000,10000,50000,100000,500000,1000000,5000000,1000000,5000000,10000000,50000000))
+    minimum_events_filter = Enum((0,2,4,8,10,20,40,100,1000,10000,100000,1000000))
     plot_redraw = Long()
     filter =  Str("")
     filter_invalid = Property(depends_on="filter")
@@ -139,7 +144,20 @@ class tcProject(HasTraits):
     num_cpu = Property(Int,depends_on='c_states')
     num_process = Property(Int,depends_on='process')
     traits_view = View(
-        VGroup(Item('filter',invalid="filter_invalid")),
+        VGroup(
+            HGroup(
+                Item('filter',invalid="filter_invalid",width=1,
+                     tooltip='filter the process list using a regular expression,\nallowing you to quickly find a process'),
+                Item('remove_filter', show_label=False, style='custom',
+                     tooltip='clear the filter')
+                ),
+            HGroup(
+                Item('minimum_time_filter',width=1,label='dur',
+                     tooltip='filter the process list with minimum duration process is scheduled'),
+                Item('minimum_events_filter',width=1,label='num',
+                     tooltip='filter the process list with minimum number of events process is generating'),
+                )
+            ),
         Item( 'filtered_processes',
               show_label  = False,
               height=40,
@@ -153,12 +171,23 @@ class tcProject(HasTraits):
         except:
             return True
         return False
+    def _remove_filter_changed(self):
+        self.filter=""
     def _filter_changed(self):
         try:
             r = re.compile(self.filter)
         except:
-            return False
-        self.filtered_processes = filter(lambda p:r.search(p.comm), self.processes)
+            r = None
+        filtered_processes =self.processes
+        if self.minimum_events_filter:
+            filtered_processes = filter(lambda p:self.minimum_events_filter < len(p.start_ts), filtered_processes)
+        if self.minimum_time_filter:
+            filtered_processes = filter(lambda p:self.minimum_time_filter < p.total_time, filtered_processes)
+        if r:
+            filtered_processes = filter(lambda p:r.search(p.comm), filtered_processes)
+        self.filtered_processes = filtered_processes
+    _minimum_time_filter_changed = _filter_changed
+    _minimum_events_filter_changed = _filter_changed
     def _processes_changed(self):
         self._filter_changed()
     def _on_show(self):
