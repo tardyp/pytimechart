@@ -3,5 +3,5 @@ include license.txt
 include readme.txt
 include setup.py
 include *.desktop
-include pytimechart
+include timechart/images/*
 

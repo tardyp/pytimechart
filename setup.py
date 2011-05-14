@@ -1,18 +1,12 @@
 #!/usr/bin/env python
-"""Installs PyTimechart using distutils
+"""Installs PyTimechart using setuptools
 
 Run:
     python setup.py install
 to install the package from the source archive.
 """
 import os
-try:
-    from setuptools import setup, find_packages
-
-    setuptools = True
-except ImportError, err:
-    from distutils.core import setup
-    setuptools = False
+from setuptools import setup, find_packages
 
 version = [
     (line.split('=')[1]).strip().strip('"').strip("'")
@@ -35,8 +29,6 @@ Provides explorability and overall visualization of linux kernel traces
 """,
         'platforms': ['Any'],
     }
-    if setuptools:
-        extraArguments['install_package_data'] = True
     ### Now the actual set up call
     setup (
         name = "pytimechart",
@@ -47,11 +39,11 @@ Provides explorability and overall visualization of linux kernel traces
         author = "Pierre Tardy",
         author_email = "tardyp@gmail.com",
         install_requires = [
-            'Traits >= 3.3',
-            'TraitsGUI >= 3.3',
-            'TraitsBackendWX >= 3.3',
-            'Enable >= 3.3',
-            'Chaco >= 3.3',
+            'Traits >= 3.0',
+            'TraitsGUI >= 3.0',
+            'TraitsBackendWX >= 3.0',
+            'Enable >= 3.0',
+            'Chaco >= 3.0',
         ],
         license = "BSD",
         namespace_packages = [
