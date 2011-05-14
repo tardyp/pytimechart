@@ -7,6 +7,20 @@ from enthought.etsconfig.api import ETSConfig
 #ETSConfig.toolkit = 'qt4'
 ETSConfig.toolkit = 'wx'
 
+# workaround bad bg color in ubuntu, with Ambiance theme
+# wxgtk (or traitsGUI, I dont know) looks like using the menu's bgcolor 
+# for all custom widgets bg colors. :-(
+
+if ETSConfig.toolkit == 'wx':
+    import wx, os
+    if "gtk2" in wx.PlatformInfo:
+        from gtk import rc_parse, MenuBar
+        m = MenuBar()
+        if m.rc_get_style().bg[0].red_float < 0.5: # only customize dark bg
+            rc_parse(os.path.join(os.path.dirname(__file__),"images/gtkrc"))
+        m.destroy()
+
+
 from enthought.pyface.api import GUI
 from window import open_file
 
