@@ -182,7 +182,6 @@ class tcPlot(BarPlot):
         gc.translate_ctm(*(-offset))
         return l_w,l_h
     def _draw_timechart(self,gc,tc,label,base_y):
-        
         bar_middle_y = self.first_bar_y+(base_y+.5)*self.bar_height
         points = self._gather_timechart_points(tc.start_ts,tc.end_ts,base_y,.2)
         if self.options.remove_pids_not_on_screen and points.size == 0:
@@ -196,7 +195,7 @@ class tcPlot(BarPlot):
             l_w,l_h = self._draw_label(gc,label,tc.name,self.x,bar_middle_y)
             self.last_label = bar_middle_y-8
         else:
-            l_w,l_h = 0,0 
+            l_w,l_h = 0,0
         if points.size != 0:
             # draw the middle line from end of label to end of screen
             if l_w != 0: # we did not draw label because too short on space
@@ -252,16 +251,13 @@ class tcPlot(BarPlot):
                     if points.size>0:
                         # map the bars start and stop locations into screen space
                         gc.set_alpha(1)
-                        lower_left_pts = self.map_screen(points[:,(0,2)]) 
+                        lower_left_pts = self.map_screen(points[:,(0,2)])
                         upper_right_pts = self.map_screen(points[:,(1,3)])
                         bounds = upper_right_pts - lower_left_pts
                         rects=column_stack((lower_left_pts, bounds))
                         gc.rects(rects)
                         gc.draw_path()
-                
-                    
         return 1
-            
     def _draw_freqchart(self,gc,tc,label,y):
         self._draw_bg(gc,y,tc.bg_color)
         low_i = searchsorted(tc.start_ts,self.index_mapper.range.low)
@@ -271,10 +267,8 @@ class tcPlot(BarPlot):
             low_i -=1
         if high_i<len(tc.start_ts):
             high_i +=1
-        
         if low_i>=high_i-1:
             return array([])
-        
         start_ts = tc.start_ts[low_i:high_i-1]
         end_ts = tc.start_ts[low_i+1:high_i]
         values = (tc.types[low_i:high_i-1]/(float(tc.max_types)))+y
@@ -435,7 +429,7 @@ def create_timechart_container(project):
     max_process = 50
     if value_range.high>max_process:
         value_range.low = value_range.high-max_process
-    # Attach some tools 
+    # Attach some tools
     plot.tools.append(PanTool(plot,drag_button='left'))
     zoom = tools.myZoomTool(component=plot, tool_mode="range", always_on=True,axis="index",drag_button=None)
     plot.tools.append(zoom)

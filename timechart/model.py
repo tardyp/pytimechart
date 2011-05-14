@@ -496,4 +496,3 @@ class tcProject(HasTraits):
             self.do_function_default(event)
         else:
             self.do_event_default(event)
-

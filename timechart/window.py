@@ -33,7 +33,7 @@ def _buildAction(desc):
                   image=ImageResource(desc["name"]))
 
 def _create_toolbar_actions():
-    actions = ( 
+    actions = (
         {"name": "show","tooltip":'show selected processes in the timechart'},
         {"name": "hide","tooltip":'hide selected processes in the timechart'},
         {"name": "hide_others","tooltip":'Hide process that are not shown at current zoom window'},
@@ -83,7 +83,6 @@ class tcWindow(HasTraits):
                 Item('project', show_label = False, editor=InstanceEditor(view = 'process_view'), style='custom',width=150),
                 Item('plot_range_tools', show_label = False, editor=InstanceEditor(view = 'selection_view'), style='custom',width=150,height=100)),
             Item('plot', show_label = False, editor = ComponentEditor()),
-                
             ),
         toolbar = ToolBar(*_create_toolbar_actions(),
                            image_size      = ( 24, 24 ),

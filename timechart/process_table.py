@@ -12,15 +12,15 @@ class coloredObjectColumn(ObjectColumn):
             return  colors.get_color_by_name("hidden_process")
     def get_cell_color(self,i):
         return colors.get_color_by_name(i.process_type+"_bg")
-        
+
 # The definition of the process TableEditor:
 process_table_editor = TableEditor(
     columns = [
                 coloredObjectColumn( name = 'comm',  width = 0.45 ,editable=False),
                 coloredObjectColumn( name = 'pid',  width = 0.10  ,editable=False),
                 coloredObjectColumn( name = 'selection_time',label="stime",  width = 0.20  ,editable=False),
-                ExpressionColumn( 
-                    label = 'stime%', 
+                ExpressionColumn(
+                    label = 'stime%',
                     width = 0.20,
                     expression = "'%.2f' % (object.selection_pc)" )
                 ],
