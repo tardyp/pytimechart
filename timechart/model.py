@@ -230,9 +230,18 @@ class tcProject(HasTraits):
 ######### generic parsing part ##########
 
 
-    def generic_find_process(self,pid,comm,ptype):
+    def generic_find_process(self,pid,comm,ptype,same_pid_match_timestamp=0):
         if self.tmp_process.has_key((pid,comm)):
             return self.tmp_process[(pid,comm)]
+        # else try to find if there has been a process with same pid recently, and different name
+        if same_pid_match_timestamp != 0 and comm != "swapper":
+            for k, p in self.tmp_process.items():
+                if k[0] == pid:
+                    if len(p['start_ts'])>0 and p['start_ts'][-1] > same_pid_match_timestamp:
+                        p['comm'] = comm
+                        self.tmp_process[(pid,comm)] = p
+                        del self.tmp_process[k]
+                        return p
         tmp = {'type':ptype,'comm':comm,'pid':pid,'start_ts':[],'end_ts':[],'types':[],'cpus':[],'comments':[]}
         if not (pid==0 and comm =="swapper"):
             self.tmp_process[(pid,comm)] = tmp
@@ -277,16 +286,6 @@ class tcProject(HasTraits):
                 if p['pid'] != process['pid']:
                     print  "warning: process premption stack following failure on CPU",event.common_cpu, p['comm'],p['pid'],process['comm'],process['pid'],map(lambda a:"%s:%d"%(a['comm'],a['pid']),p_stack),event.linenumber
                     p_stack = []
-                elif p['comm'] != process['comm']:
-                    # this is the fork and exec case.
-                    # fix the temporary process that had the comm of the parent
-                    # remove old pid,comm from process list
-                    del self.tmp_process[(p['pid'],p['comm'])]
-                    # add new pid,comm to process list
-                    p['comm'] = process['comm']
-                    self.tmp_process[(p['pid'],p['comm'])] = p
-                    if len(p['start_ts'])>len(p['end_ts']):
-                        p['end_ts'].append(event.timestamp)
 
                 if p_stack:
                     p = p_stack[-1]
@@ -298,8 +297,8 @@ class tcProject(HasTraits):
                     p['cpus'].append(event.common_cpu)
 
     def do_event_sched_switch(self,event):
-        prev = self.generic_find_process(event.prev_pid,event.prev_comm,"user_process")
-        next = self.generic_find_process(event.next_pid,event.next_comm,"user_process")
+        prev = self.generic_find_process(event.prev_pid,event.prev_comm,"user_process",event.timestamp-1000000)
+        next = self.generic_find_process(event.next_pid,event.next_comm,"user_process",event.timestamp-1000000)
 
         self.generic_process_end(prev,event)
 
@@ -428,7 +427,7 @@ class tcProject(HasTraits):
             tc = self.tmp_process[pid,comm]
             if self.process_types.has_key(tc['type']):
                 klass, order = self.process_types[tc['type']]
-                t = klass(pid=pid,comm=comm,project=self)
+                t = klass(pid=pid,comm=tc['comm'],project=self)
             else:
                 t = tcProcess(pid=pid,comm=comm,project=self)
             while len(tc['start_ts'])>len(tc['end_ts']):
