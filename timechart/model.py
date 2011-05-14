@@ -170,10 +170,10 @@ class tcProject(HasTraits):
             i.show = False
         self.plot_redraw +=1
     def _on_select_all(self):
-        if self.selected == self.processes:
+        if self.selected == self.filtered_processes:
             self.selected = []
         else:
-            self.selected = self.processes
+            self.selected = self.filtered_processes
         self.plot_redraw +=1
 
     def _on_invert(self):

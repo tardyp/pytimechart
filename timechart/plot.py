@@ -431,6 +431,7 @@ def create_timechart_container(project):
     plot.lowest_i = low
     plot.highest_i = high
     project.on_trait_change(plot.invalidate, "plot_redraw")
+    project.on_trait_change(plot.invalidate, "selected")
     max_process = 50
     if value_range.high>max_process:
         value_range.low = value_range.high-max_process
