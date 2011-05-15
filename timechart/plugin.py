@@ -1,4 +1,3 @@
-
 POWER_CLASS=0
 IRQ_CLASS=1
 WORK_CLASS=2
@@ -15,14 +14,14 @@ class plugin:
 def plugin_register(plugin_class):
     plugin_list.append(plugin_class)
 
-def get_plugins_additional_methods():
-    methods = {}
+def get_plugins_methods(methods):
     for p in plugin_list:
         for name in dir(p):
             method = getattr(p, name)
             if callable(method):
-                methods[name] = method
-    return methods
+                if not name in methods:
+                    methods[name] = []
+                methods[name].append(method)
 def get_plugins_additional_process_types():
     s = {}
     for p in plugin_list:
@@ -44,4 +43,3 @@ for f in os.listdir(os.path.abspath(plugins.__path__[0])):
     module_name, ext = os.path.splitext(f)
     if (not module_name.startswith(".")) and ext == '.py' and module_name != "__init__":
         module = __import__("timechart.plugins."+module_name)
-

@@ -319,56 +319,6 @@ class tcProject(HasTraits):
                     p['types'].append(colors.get_color_id("running"))
                     p['cpus'].append(event.common_cpu)
 
-    def do_event_sched_switch(self,event):
-        prev = self.generic_find_process(event.prev_pid,event.prev_comm,"user_process",event.timestamp-1000000)
-        next = self.generic_find_process(event.next_pid,event.next_comm,"user_process",event.timestamp-1000000)
-
-        self.generic_process_end(prev,event)
-
-        if event.__dict__.has_key('prev_state') and event.prev_state == 'R':# mark prev to be waiting for cpu
-            prev['start_ts'].append(event.timestamp)
-            prev['types'].append(colors.get_color_id("waiting_for_cpu"))
-            prev['cpus'].append(event.common_cpu)
-
-        self.generic_process_start(next,event)
-
-    def do_event_sched_wakeup(self,event):
-        p_stack = self.cur_process[event.common_cpu]
-        if p_stack:
-            p = p_stack[-1]
-            self.wake_events.append(((p['comm'],p['pid']),(event.comm,event.pid),event.timestamp))
-        else:
-            self.wake_events.append(((event.common_comm,event.common_pid),(event.comm,event.pid),event.timestamp))
-    def do_event_irq_handler_entry(self,event,soft=""):
-        process = self.generic_find_process(0,"%sirq%d:%s"%(soft,event.irq,event.name),soft+"irq")
-        self.last_irq[(event.irq,soft)] = process
-        self.generic_process_start(process,event)
-    def do_event_irq_handler_exit(self,event,soft=""):
-        try:
-            process = self.last_irq[(event.irq,soft)]
-        except KeyError:
-            print "error did not find last irq"
-            print self.last_irq.keys(),(event.irq,soft)
-            return
-        self.generic_process_end(process,event)
-        try:
-            if event.ret=="unhandled":
-                process['types'][-1]=4
-	except:
-	    pass
-    def do_event_softirq_entry(self,event):
-        event.irq = event.vec
-        event.name = ""
-        return self.do_event_irq_handler_entry(event,"soft")
-    def do_event_softirq_exit(self,event):
-        event.irq = event.vec
-        event.name = ""
-        return self.do_event_irq_handler_exit(event,"soft")
-
-    def do_event_workqueue_execution(self,event):
-        process = self.generic_find_process(0,"work:%s"%(event.func),"work")
-        self.generic_process_start(process,event)
-        self.generic_process_end(process,event)
 
     def do_function_default(self,event):
         process = self.generic_find_process(0,"kernel function:%s"%(event.callee),"function")
@@ -399,21 +349,12 @@ class tcProject(HasTraits):
         self.missed_power_end = 0
         self.get_partial_text = get_partial_text
         self.methods = {}
-        for name in dir(self):
-            method = getattr(self, name)
-            if callable(method):
-                self.methods[name] = method
         import plugin
         colors.parse_colors(plugin.get_plugins_additional_colors())
-        self.plugin_methods = plugin.get_plugins_additional_methods()
+        plugin.get_plugins_methods(self.methods)
         self.process_types = {
-            "irq":(tcProcess, plugin.IRQ_CLASS),
-            "softirq":(tcProcess, plugin.IRQ_CLASS),
-            "work":(tcProcess, plugin.WORK_CLASS),
             "function":(tcProcess, plugin.MISC_TRACES_CLASS),
-            "event":(tcProcess, plugin.MISC_TRACES_CLASS),
-            "kernel_process":(tcProcess, plugin.KERNEL_CLASS),
-            "user_process":(tcProcess, plugin.KERNEL_CLASS)}
+            "event":(tcProcess, plugin.MISC_TRACES_CLASS)}
         self.process_types.update(plugin.get_plugins_additional_process_types())
     def finish_parsing(self):
         #put generated data in unresizable numpy format
@@ -492,30 +433,39 @@ class tcProject(HasTraits):
         while len(self.tmp_p_states)<=cpu:
             self.tmp_p_states.append({'start_ts':[],'end_ts':[],'types':[]})
 
+    def run_callbacks(self, callback, event):
+        if callback in self.methods:
+            for m in self.methods[callback]:
+                try:
+                    m(self,event)
+                except AttributeError:
+                    if not hasattr(m,"num_exc"):
+                        m.num_exc = 0
+                    m.num_exc += 1
+                    if m.num_exc <10:
+                        print "bug in ", m, "still continue.."
+                        traceback.print_exc()
+                        print event
+                    if m.num_exc == 10:
+                        print m, "is too buggy, disabling, please report bug!"
+                        self.methods[callback].remove(m)
+                        if len(self.methods[callback])==0:
+                            del self.methods[callback]
+            return True
+        return False
+
     def handle_trace_event(self,event):
-        callback = "do_event_"+event.event
         self.linenumbers.append(event.linenumber)
         self.timestamps.append(event.timestamp)
         if event.event=='function':
             callback = "do_function_"+event.callee
-        if self.plugin_methods.has_key(callback):
-            try:
-                self.plugin_methods[callback](self,event)
-                return
-            except AttributeError:
-                if not hasattr(self.plugin_methods[callback],"num_exc"):
-                    self.plugin_methods[callback].num_exc = 0
-                self.plugin_methods[callback].num_exc += 1
-                if self.plugin_methods[callback].num_exc <10:
-                    print "bug in ",self.plugin_methods[callback],"still continue.."
-                    traceback.print_exc()
-                    print event
-                if self.plugin_methods[callback].num_exc == 10:
-                    print self.plugin_methods[callback], "is too buggy, disabling, please report bug!"
-                    del self.plugin_methods[callback]
-        if self.methods.has_key(callback):
-            self.methods[callback](event)
-        elif event.event=='function':
-            self.do_function_default(event)
+            self.run_callbacks("do_all_functions", event)
         else:
-            self.do_event_default(event)
+            callback = "do_event_"+event.event
+            self.run_callbacks("do_all_events", event)
+
+        if not self.run_callbacks(callback, event):
+            if event.event=='function':
+                self.do_function_default(event)
+            else:
+                self.do_event_default(event)
