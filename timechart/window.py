@@ -57,16 +57,16 @@ def _create_toolbar_actions():
         {"name": "hide_others","tooltip":'Hide process that are not shown at current zoom window'},
         {"name": "hide_onscreen","tooltip":'Hide process that are shown at current zoom window'},
         {},
-        {"name": "trace_text","tooltip":'show the text trace of the selection'},
-        {"name": "zoom","tooltip":'zoom on the selection'},
-        {"name": "unzoom","tooltip":'unzoom to show the whole trace'},
-        {},
         {"name": "toggle_autohide","tooltip":'This will autoHide process that do not have any events in the current zooming window', "default":True},
         {"name": "toggle_auto_zoom_y","tooltip":'automatically set the y scale to fit the number of process shown', "default":True},
         {},
         {"name": "toggle_wakes","tooltip":'This will show/hide the wake_events.\nThis slows down a lot graphics'},
         {"name": "toggle_cpufreq","tooltip":'This will show/hide the cpufreq representation.', "default":True},
         {"name": "toggle_cpuidle","tooltip":'This will show/hide the cpuidle representation.', "default":True},
+        {},
+        {"name": "trace_text","tooltip":'show the text trace of the selection'},
+        {"name": "zoom","tooltip":'zoom on the selection'},
+        {"name": "unzoom","tooltip":'unzoom to show the whole trace'},
         )
     ret = []
     for i in actions:
@@ -90,6 +90,7 @@ class tcWindow(HasTraits):
         self.project = project
         self.plot =  create_timechart_container(project)
         self.plot_range_tools = self.plot.range_tools
+        self.plot_range_tools.on_trait_change(self._selection_time_changed, "time")
         self.trait_view().title = "PyTimechart: "+project.filename
     def get_title(self):
         return "PyTimechart:"+self.project.filename
@@ -103,7 +104,8 @@ class tcWindow(HasTraits):
         HSplit(
             VSplit(
                 Item('project', show_label = False, editor=InstanceEditor(view = 'process_view'), style='custom',width=150),
-                Item('plot_range_tools', show_label = False, editor=InstanceEditor(view = 'selection_view'), style='custom',width=150,height=100)),
+#                Item('plot_range_tools', show_label = False, editor=InstanceEditor(view = 'selection_view'), style='custom',width=150,height=100)
+                ),
             Item('plot', show_label = False, editor = ComponentEditor()),
             ),
         toolbar = ToolBar(*_create_toolbar_actions(),
@@ -126,6 +128,8 @@ class tcWindow(HasTraits):
         sys.exit(0)
     def _on_about(self):
         pass
+    def _selection_time_changed(self):
+        self.status = "selection time:%s"%(self.plot_range_tools.time)
 
 
 prof = 0

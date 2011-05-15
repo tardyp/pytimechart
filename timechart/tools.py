@@ -1,4 +1,4 @@
-from enthought.chaco.tools.api import PanTool, ZoomTool
+from enthought.chaco.tools.api import PanTool, ZoomTool, RangeSelection
 
 class myZoomTool(ZoomTool):
     """ a zoom tool which change y range only when control is pressed
@@ -34,3 +34,18 @@ class myZoomTool(ZoomTool):
             my_fake_event.mouse_wheel*=2
         if my_fake_event.mouse_wheel:
             self.normal_mouse_wheel(my_fake_event)
+
+# left down conflicts with the panning tool
+# just overide and disable change state to moving
+# change the moving binding to middle click
+class myRangeSelection(RangeSelection):
+    def selected_left_down(self, event):
+        RangeSelection.selected_left_down(self,event)
+        if self.event_state == "moving":
+            self.event_state = "selected"
+    def selected_middle_down(self, event):
+        RangeSelection.selected_left_down(self,event)
+    def moving_middle_up(self, event):
+        RangeSelection.moving_left_up(self,event)
+    def selecting_middle_up(self, event):
+        RangeSelection.selected_left_up(self,event)

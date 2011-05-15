@@ -109,6 +109,8 @@ class RangeSelectionTools(HasTraits):
             self.start, self.end = amin(value), amax(value)
             time = self.end-self.start
             self.time = "%d.%03d %03ds"%(time/1000000,(time/1000)%1000,time%1000)
+            self.plot.immediate_invalidate()
+            self._timer.Stop()
             self._timer.Start()
     def _on_zoom(self):
         self.plot.index_range.high = self.end
@@ -162,6 +164,9 @@ class tcPlot(BarPlot):
     def invalidate(self):
         self.invalidate_draw()
         self.request_redraw()
+    def immediate_invalidate(self):
+        self.invalidate_draw()
+        self.request_redraw_delayed()
 
     def request_redraw_delayed(self):
         self.redraw_timer.Stop()
@@ -448,7 +453,7 @@ def create_timechart_container(project):
     zoom = tools.myZoomTool(component=plot, tool_mode="range", always_on=True,axis="index",drag_button=None)
     plot.tools.append(zoom)
 
-    plot.range_selection = RangeSelection(plot,resize_margin=1)
+    plot.range_selection = tools.myRangeSelection(plot,resize_margin=3)
     plot.tools.append(plot.range_selection)
     plot.overlays.append(RangeSelectionOverlay(component=plot,axis="index",use_backbuffer=True))
 
