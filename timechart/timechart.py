@@ -25,8 +25,8 @@ from enthought.pyface.api import GUI
 from window import open_file
 
 
-prof=0
-def main():
+
+def main(prof = len(sys.argv)>2):
     # Create the GUI (this does NOT start the GUI event loop).
     gui = GUI()
     if len(sys.argv)>1:
@@ -39,9 +39,21 @@ def main():
             cProfile.run('gui.start_event_loop()','timechart.prof')
         else:
             gui.start_event_loop()
+
+# used for profiling, and regression tests
+def just_open(prof = len(sys.argv)>2):
+    if len(sys.argv)>1:
+        fn = sys.argv[1]
+    else:
+        fn = None
+    if prof:
+        import cProfile
+        cProfile.run('open_file(fn)','timechart.prof')
+    else:
+        open_file(fn)
+
 if __name__ == '__main__':
     main()
 import py2exe_wximports
 
 ##### EOF #####################################################################
-
