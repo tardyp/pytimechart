@@ -106,21 +106,26 @@ class RangeSelectionTools(HasTraits):
             self.plot.immediate_invalidate()
             self._timer.Stop()
             self._timer.Start()
+        else:
+            self.start = 0
+            self.end = 0
     def _on_zoom(self):
-        self.plot.index_range.high = self.end
-        self.plot.index_range.low = self.start
-        self.plot.range_selection.deselect()
-        self.plot.invalidate_draw()
-        self.plot.request_redraw()
+        if self.end != self.start:
+            self.plot.index_range.high = self.end
+            self.plot.index_range.low = self.start
+            self.plot.range_selection.deselect()
+            self.plot.invalidate_draw()
+            self.plot.request_redraw()
     def _on_unzoom(self):
         self.plot.index_range.high = self.plot.highest_i
         self.plot.index_range.low = self.plot.lowest_i
         self.plot.invalidate_draw()
         self.plot.request_redraw()
     def _on_trace_text(self):
-        text = self.plot.proj.get_selection_text(self.start,self.end)
-        text_view = TextView(text,"%s:[%d:%d]"%(self.plot.proj.filename,self.start,self.end))
-        text_view.edit_traits()
+        if self.end != self.start:
+            text = self.plot.proj.get_selection_text(self.start,self.end)
+            text_view = TextView(text,"%s:[%d:%d]"%(self.plot.proj.filename,self.start,self.end))
+            text_view.edit_traits()
 
     def _selection_updated_delayed(self):
         self.plot.proj.process_stats(self.start,self.end)
