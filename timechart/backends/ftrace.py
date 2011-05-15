@@ -116,6 +116,12 @@ def ftrace_open(filename):
     if filename.endswith(".gz"):
         import gzip
         return gzip.open(filename,"r")
+    elif filename.endswith(".lzma"):
+        try:
+            import lzma
+        except:
+            raise Exception("lzma module could not be imported. Please install python-lzma to seemlessly open lzma compressed file")
+        return lzma.LZMAFile(filename,"r")
     else:
         return open(filename,"r")
 #@profile
@@ -196,6 +202,8 @@ def detect_ftrace(fn):
     if fn.endswith(".txt"):
         return load_ftrace
     if fn.endswith(".txt.gz"):
+        return load_ftrace
+    if fn.endswith(".txt.lzma"):
         return load_ftrace
     return None
 #### TEST ######################################################################

@@ -130,7 +130,7 @@ prof = 0
 
 import wx
 def open_dialog():
-    dlg = wx.FileDialog(None, "Choose a file", "", "", "*.txt;*.gz", wx.OPEN)
+    dlg = wx.FileDialog(None, "Choose a file", "", "", "*.txt;*.gz;*.lzma", wx.OPEN)
     rv = None
     if dlg.ShowModal() == wx.ID_OK:
         filename=dlg.GetFilename()
