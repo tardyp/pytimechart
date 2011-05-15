@@ -91,12 +91,6 @@ class TextView(HasTraits):
                 print "unable to write file..."
 class RangeSelectionTools(HasTraits):
     time = Str
-    c_states = Str
-    traits_view = View(VGroup(
-            Item('time'),
-            Item('c_states',style="custom"),
-            label='Selection Infos'
-            ))
     start = 0
     end = 0
     def connect(self,plot):
@@ -129,19 +123,8 @@ class RangeSelectionTools(HasTraits):
         text_view.edit_traits()
 
     def _selection_updated_delayed(self):
-        c_states_stats = self.plot.proj.c_states_stats(self.start,self.end)
-        tmp = ""
-        i=0
-        for cpu_stat in c_states_stats:
-            tmp+="cpu%d:\n"%(i)
-            i+=1
-            for cstate in sorted([i for i in cpu_stat.keys()]):
-                part = cpu_stat[cstate]
-                tmp += "C%d:%dus %02.f%%\n"%(cstate,part,part*100/(self.end-self.start))
-        self.c_states = tmp
         self.plot.proj.process_stats(self.start,self.end)
         self._timer.Stop()
-        pass
 class tcPlot(BarPlot):
     """custom plot to draw the timechart
     probably not very 'chacotic' We draw the chart as a whole

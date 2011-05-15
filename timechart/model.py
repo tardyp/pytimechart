@@ -219,20 +219,6 @@ class tcProject(HasTraits):
         print selection
 ######### stats part ##########
 
-    def c_states_stats(self,start,end):
-        l = []
-        for tc in self.c_states: # walk cstates per cpus
-            starts,ends,types = tc.get_partial_tables(start,end)
-            stats = {}
-            tot = 0
-            for t in np.unique(types):
-                inds = np.where(types==t)
-                time = sum(ends[inds]-starts[inds])
-                tot += time
-                stats[t] = time
-            stats[0] = (end-start)-tot
-            l.append(stats)
-        return l
     def process_stats(self,start,end):
         fact = 100./(end-start)
         for tc in self.processes:
