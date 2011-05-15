@@ -223,8 +223,7 @@ class tcProject(HasTraits):
         fact = 100./(end-start)
         for tc in self.processes:
             starts,ends,types = tc.get_partial_tables(start,end)
-            #@todo, need to take care of running vs waiting
-            inds = np.where(types==1)
+            inds = np.where(types==colors.get_color_id("running"))
             tot = sum(ends[inds]-starts[inds])
             tc.selection_time = int(tot)
             tc.selection_pc = tot*fact
