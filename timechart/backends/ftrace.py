@@ -110,16 +110,20 @@ def load_tracecmd(filename,callback):
                 first_cpu = cpu
                 ts = events[cpu].ts
         callback(TraceCmdEventWrapper(events[first_cpu]))
-        
+
         events[first_cpu] = t.read_event(first_cpu)
         if events[first_cpu] == None:
             cpu_event_list_not_empty -= 1
-
+# seemlessly open gziped of raw text files
+def ftrace_open(filename):
+    if filename.endswith(".gz"):
+        import gzip
+        return gzip.open(filename,"r")
+    else:
+        return open(filename,"r")
 #@profile
 def parse_ftrace(filename,callback):
-    if filename.endswith(".dat"):
-        return load_tracecmd(filename,callback)
-    fid = open(filename,"r")
+    fid = ftrace_open(filename)
 
     # the base regular expressions
     event_re = re.compile(
@@ -173,7 +177,7 @@ def parse_ftrace(filename,callback):
     fid.close()
 def get_partial_text(fn,start,end):
     text = ""
-    fid = open(fn,"r")
+    fid = ftrace_open(fn)
     linenumber = 0
     for line in fid:
         linenumber+=1
@@ -193,6 +197,8 @@ def load_ftrace(fn):
 
 def detect_ftrace(fn):
     if fn.endswith(".txt"):
+        return load_ftrace
+    if fn.endswith(".txt.gz"):
         return load_ftrace
     return None
 #### TEST ######################################################################
