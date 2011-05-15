@@ -3,7 +3,7 @@ from enthought.chaco.api import ArrayDataSource, DataRange1D, LinearMapper,BarPl
                                  add_default_grids,VPlotContainer
 from enthought.chaco.tools.api import PanTool, ZoomTool,RangeSelection,RangeSelectionOverlay
 from enthought.chaco.api import create_line_plot
-from enthought.traits.ui.api import View,Item,VGroup
+from enthought.traits.ui.api import View,Item,VGroup,HGroup
 from enthought.traits.api import HasTraits,DelegatesTo,Trait
 from enthought.traits.api import Float, Instance, Int,Bool,Str,Unicode,Enum,Button
 from enthought.chaco.api import AbstractOverlay, BaseXYPlot
@@ -21,6 +21,7 @@ from numpy import array, compress, column_stack, invert, isnan, transpose, zeros
 from enthought.traits.api import List
 from enthought.enable.colors import ColorTrait
 from enthought.pyface.timer import timer
+
 process_colors=[0x000000,0x555555,0xffff88,0x55ffff,0xAD2D2D, 0xeeeeee,0xeeaaaa,0xaaaaee,0xee0000]
 class TimeChartOptions(HasTraits):
     minimum_time_filter = Enum((0,1000,10000,50000,100000,500000,1000000,5000000,1000000,5000000,10000000,50000000))
@@ -63,16 +64,30 @@ class TimeChartOptions(HasTraits):
         self.auto_zoom_timer.Stop()
 class TextView(HasTraits):
     text = Str
+    save = Button()
     def __init__(self,text,title):
         self.text = text
         self.trait_view().title = title
 
     traits_view = View(
-            Item('text',style="custom",show_label=False),
-            resizable = True,
-            width = 1024,
-            height = 600,
-            )
+        Item('text',style="custom",show_label=False),
+        HGroup(
+            Item('save'),
+            show_labels = False),
+        resizable = True,
+        width = 1024,
+        height = 600,
+        )
+    def _save_changed(self):
+        from window import save_dialog
+        fn = save_dialog()
+        if fn:
+            try:
+                f = open(fn,"w")
+                f.write(self.text)
+                f.close()
+            except:
+                print "unable to write file..."
 class RangeSelectionTools(HasTraits):
     time = Str
     c_states = Str

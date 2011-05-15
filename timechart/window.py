@@ -120,6 +120,17 @@ def open_dialog():
     dlg.Destroy()
     return rv
 
+def save_dialog():
+    dlg = wx.FileDialog(None, "Save file...", "", "", "*.txt", wx.SAVE)
+    rv = None
+    if dlg.ShowModal() == wx.ID_OK:
+        filename=dlg.GetFilename()
+        dirname=dlg.GetDirectory()
+        rv = os.path.join(dirname, filename)
+
+    dlg.Destroy()
+    return rv
+
 def open_file(fn=None):
     from backends.perf import detect_perf
     from backends.ftrace import detect_ftrace
