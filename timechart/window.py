@@ -8,12 +8,6 @@ from enthought.enable.component_editor import ComponentEditor
 from enthought.pyface.image_resource \
     import ImageResource
 
-# workaround bug in kiva's font manager that fails to find a correct default font on linux
-if os.name=="posix":
-    from  enthought.kiva.fonttools.font_manager import fontManager, FontProperties
-    font = FontProperties()
-    font.set_name("DejaVu Sans")
-    fontManager.defaultFont = fontManager.findfont(font)
 
 
 class tcActionHandler(Handler):

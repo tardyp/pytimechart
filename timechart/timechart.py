@@ -20,6 +20,17 @@ if ETSConfig.toolkit == 'wx':
             rc_parse(os.path.join(os.path.dirname(__file__),"images/gtkrc"))
         m.destroy()
 
+# workaround bug in kiva's font manager that fails to find a correct default font on linux
+if os.name=="posix":
+    import warnings
+    def devnull(*args):
+        pass
+    warnings.showwarning = devnull
+    from  enthought.kiva.fonttools.font_manager import fontManager, FontProperties
+    font = FontProperties()
+    font.set_name("DejaVu Sans")
+    fontManager.defaultFont = fontManager.findfont(font)
+    fontManager.warnings = None
 
 from enthought.pyface.api import GUI
 from window import open_file
