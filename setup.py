@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 version = [
     (line.split('=')[1]).strip().strip('"').strip("'")
-    for line in open(os.path.join('timechart', '__init__.py'))
+    for line in open(os.path.join('timechart', 'window.py'))
     if line.startswith( '__version__' )
 ][0]
 

@@ -8,8 +8,20 @@ from enthought.enable.component_editor import ComponentEditor
 from enthought.pyface.image_resource \
     import ImageResource
 
-
-
+__version__="0.9.1"
+class aboutBox(HasTraits):
+    program = Str("pytimechart: linux traces exploration and visualization")
+    author = Str("Pierre Tardy <tardyp@gmail.com>")
+    version = Str(__version__)
+    traits_view = View(
+        Item("program", show_label=False, style="readonly"),
+        Item("author" , style="readonly"),
+        Item("version", style="readonly"),
+        width=500,
+        title="about"
+        )
+        
+    
 class tcActionHandler(Handler):
     handler_list = []
     actions = {}
@@ -121,6 +133,7 @@ class tcWindow(HasTraits):
     def close(self,n=None):
         sys.exit(0)
     def _on_about(self):
+        aboutBox().edit_traits()
         pass
     def _selection_time_changed(self):
         self.status = "selection time:%s"%(self.plot_range_tools.time)
