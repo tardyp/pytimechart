@@ -36,7 +36,8 @@ def main(prof = len(sys.argv)>2):
     if open_file(fn):
         if prof:
             import cProfile
-            cProfile.run('gui.start_event_loop()','timechart.prof')
+            dict = {"gui":gui}
+            cProfile.runctx('gui.start_event_loop()',dict,dict,'timechart.prof')
         else:
             gui.start_event_loop()
 
@@ -48,7 +49,8 @@ def just_open(prof = len(sys.argv)>2):
         fn = None
     if prof:
         import cProfile
-        cProfile.run('open_file(fn)','timechart.prof')
+        dict = {"open_file":open_file,"fn":fn}
+        cProfile.runctx('open_file(fn)',dict,dict,'timechart.prof')
     else:
         open_file(fn)
 
