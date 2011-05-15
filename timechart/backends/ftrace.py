@@ -5,9 +5,6 @@ from timechart.plugin import get_plugins_additional_ftrace_parsers
 # take the TP_printk from the /include/trace/events dir
 # syntax is event_name, printk, printk_args...
 events_desc = [
-    ('power_start',   'type=%d state=%d', 'type','state'),
-    ('power_frequency',   'type=%d state=%d', 'type','state'),
-    #('power_end', 'nothing interesting to parse'),
     ('sched_switch',  'task %s:%d [%d] (%s) ==> %s:%d [%d]',
      'prev_comm', 'prev_pid', 'prev_prio','prev_state' ,
      'next_comm', 'next_pid', 'next_prio'),
