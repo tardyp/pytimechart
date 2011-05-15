@@ -217,12 +217,6 @@ class tcProject(HasTraits):
         return len(self.processes)
     def process_list_selected(self, selection):
         print selection
-    def load(self,filename):
-        self.filename = filename
-        if filename.endswith(".tmct"):
-            return self.load_tmct(filename)
-        else:
-            return self.load_ftrace(filename)
 ######### stats part ##########
 
     def c_states_stats(self,start,end):
