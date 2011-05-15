@@ -24,7 +24,6 @@ from enthought.pyface.timer import timer
 
 process_colors=[0x000000,0x555555,0xffff88,0x55ffff,0xAD2D2D, 0xeeeeee,0xeeaaaa,0xaaaaee,0xee0000]
 class TimeChartOptions(HasTraits):
-    minimum_time_filter = Enum((0,1000,10000,50000,100000,500000,1000000,5000000,1000000,5000000,10000000,50000000))
     remove_pids_not_on_screen = Bool(True)
     show_wake_events = Bool(False)
     show_p_states = Bool(True)
@@ -33,15 +32,6 @@ class TimeChartOptions(HasTraits):
 
     proj = tcProject
 
-    traits_view = View(VGroup(
-            Item('minimum_time_filter'),
-            Item('remove_pids_not_on_screen'),
-            Item('show_wake_events'),
-            Item('show_p_states'),
-            Item('show_c_states'),
-            Item('auto_zoom_y'),
-            label='Display Properties'
-            ))
     def connect(self,plot):
         self.auto_zoom_timer = timer.Timer(300,self._auto_zoom_y_delayed)
         self.auto_zoom_timer.Stop()
@@ -62,6 +52,17 @@ class TimeChartOptions(HasTraits):
     def _auto_zoom_y_delayed(self):
         self.plot.auto_zoom_y()
         self.auto_zoom_timer.Stop()
+    def _on_toggle_autohide(self, value):
+        self.remove_pids_not_on_screen = value
+    def _on_toggle_wakes(self, value):
+        self.show_wake_events = value
+    def _on_toggle_cpuidle(self, value):
+        self.show_c_states = value
+    def _on_toggle_cpufreq(self, value):
+        self.show_p_states = value
+    def _on_toggle_auto_zoom_y(self, value):
+        self.show_auto_zoom_y = value
+
 class TextView(HasTraits):
     text = Str
     save = Button()
@@ -375,8 +376,6 @@ class tcPlot(BarPlot):
         not_on_screen = []
         on_screen = []
         for tc in self.proj.processes:
-            if tc.total_time < self.options.minimum_time_filter:
-                continue
             if tc.show==False:
                 continue
             processes_y[(tc.comm,tc.pid)] = y+.5

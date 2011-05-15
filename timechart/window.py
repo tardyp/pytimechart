@@ -1,7 +1,7 @@
 import sys,os
 from enthought.traits.api import  HasTraits,Str
 from enthought.traits.ui.api import InstanceEditor,Item,View,HSplit,VSplit,Handler, StatusItem
-from enthought.traits.ui.menu import Action, MenuBar, ToolBar, Menu
+from enthought.traits.ui.menu import Action, MenuBar, ToolBar, Menu, Separator
 from model import tcProject
 from plot import tcPlot, create_timechart_container
 from enthought.enable.component_editor import ComponentEditor
@@ -18,32 +18,55 @@ if os.name=="posix":
 
 class tcActionHandler(Handler):
     handler_list = []
+    actions = {}
     def chooseAction(self, UIInfo,name):
         window = UIInfo.ui.context['object']
         handler_list = [window, window.project, window.plot, window.plot.options, window.plot.range_tools]
         for i in handler_list:
             fn = getattr(i, name, None)
             if fn is not None:
-                fn()
-
+                if name.startswith("_on_toggle"):
+                    fn(getattr(UIInfo,name[len("_on_"):]).checked)
+                else:
+                    fn()
 def _buildAction(desc):
+    if len(desc) == 0:
+        return Separator()
     exec("tcActionHandler.%s = lambda self,i:self.chooseAction(i,'_on_%s')"%(desc["name"],desc["name"]))
-    return Action(name=desc["name"], action=desc["name"],
+    style = desc["name"].startswith("toggle") and "toggle" or "push"
+    default = False
+    if "default" in desc:
+        default = desc["default"]
+    action = Action(name=desc["name"], action=desc["name"],
                   tooltip=desc["tooltip"],
-                  image=ImageResource(desc["name"]))
+                  image=ImageResource(desc["name"]),
+                  style=style,
+                  checked=default)
+    tcActionHandler.actions[desc["name"]] = action
+    return action
 
 def _create_toolbar_actions():
     actions = (
-        {"name": "show","tooltip":'show selected processes in the timechart'},
-        {"name": "hide","tooltip":'hide selected processes in the timechart'},
-        {"name": "hide_others","tooltip":'Hide process that are not shown at current zoom window'},
-        {"name": "hide_onscreen","tooltip":'Hide process that are shown at current zoom window'},
+        {},
         {"name": "invert","tooltip":'invert processes show/hide value.\nThis is useful, when you are fully zoomed,\nand you want to see if you are not missing some valuable info\nin the hidden processes'},
         {"name": "select_all","tooltip":'select_all/unselect_all'},
-        {"name": "zoom","tooltip":'zoom on the selection'},
+        {},
+        {"name": "show","tooltip":'show selected processes in the timechart'},
+        {"name": "hide","tooltip":'hide selected processes in the timechart'},
+        {},
+        {"name": "hide_others","tooltip":'Hide process that are not shown at current zoom window'},
+        {"name": "hide_onscreen","tooltip":'Hide process that are shown at current zoom window'},
+        {},
         {"name": "trace_text","tooltip":'show the text trace of the selection'},
+        {"name": "zoom","tooltip":'zoom on the selection'},
         {"name": "unzoom","tooltip":'unzoom to show the whole trace'},
-        {"name": "view_properties","tooltip":'edit plot view options'},
+        {},
+        {"name": "toggle_autohide","tooltip":'This will autoHide process that do not have any events in the current zooming window', "default":True},
+        {"name": "toggle_auto_zoom_y","tooltip":'automatically set the y scale to fit the number of process shown', "default":True},
+        {},
+        {"name": "toggle_wakes","tooltip":'This will show/hide the wake_events.\nThis slows down a lot graphics'},
+        {"name": "toggle_cpufreq","tooltip":'This will show/hide the cpufreq representation.', "default":True},
+        {"name": "toggle_cpuidle","tooltip":'This will show/hide the cpuidle representation.', "default":True},
         )
     ret = []
     for i in actions:
@@ -52,7 +75,6 @@ def _create_toolbar_actions():
 def _create_menubar_actions():
     desc = (('&File', ( {"name": "open","tooltip":'open new file into pytimechart'},
                         {"name": "exit","tooltip":'exit pytimechart'})),
-            ('&View', ( {"name": "view_properties","tooltip":'edit plot view options'},)),
             ('&Help', ( {"name": "about","tooltip":'about'},)))
     ret = []
     for menu in desc:
