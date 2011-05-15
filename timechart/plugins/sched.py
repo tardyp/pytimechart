@@ -16,8 +16,8 @@ class sched(plugin):
     @staticmethod
     def do_event_sched_switch(self,event):
         # @todo differenciate between kernel and user process
-        prev = self.generic_find_process(event.prev_pid,event.prev_comm,"user_process",event.timestamp-1000000)
-        next = self.generic_find_process(event.next_pid,event.next_comm,"user_process",event.timestamp-1000000)
+        prev = self.generic_find_process(event.prev_pid,event.prev_comm,"user_process",event.timestamp-100000000)
+        next = self.generic_find_process(event.next_pid,event.next_comm,"user_process",event.timestamp-100000000)
 
         self.generic_process_end(prev,event)
 
