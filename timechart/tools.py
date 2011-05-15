@@ -1,4 +1,4 @@
-from enthought.chaco.tools.api import PanTool, ZoomTool, RangeSelection
+from enthought.chaco.tools.api import PanTool, ZoomTool, RangeSelection, PanTool
 
 class myZoomTool(ZoomTool):
     """ a zoom tool which change y range only when control is pressed
@@ -49,3 +49,8 @@ class myRangeSelection(RangeSelection):
         RangeSelection.moving_left_up(self,event)
     def selecting_middle_up(self, event):
         RangeSelection.selected_left_up(self,event)
+# immediatly refresh the plot for better fluidity
+class myPanTool(PanTool):
+    def panning_mouse_move(self,event):
+        PanTool.panning_mouse_move(self,event)
+        self.component.immediate_invalidate()

@@ -432,7 +432,7 @@ def create_timechart_container(project):
     if value_range.high>max_process:
         value_range.low = value_range.high-max_process
     # Attach some tools
-    plot.tools.append(PanTool(plot,drag_button='left'))
+    plot.tools.append(tools.myPanTool(plot,drag_button='left'))
     zoom = tools.myZoomTool(component=plot, tool_mode="range", always_on=True,axis="index",drag_button=None)
     plot.tools.append(zoom)
 
