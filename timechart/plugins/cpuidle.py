@@ -39,8 +39,11 @@ cpufreq_bg		#ffddee
 
     @staticmethod
     def start_cpu_idle(self, event):
-        self.ensure_cpu_allocated(event.cpuid)
-        tc = self.tmp_c_states[event.cpuid]
+        try:
+            tc = self.tmp_c_states[event.cpuid]
+        except:
+            self.ensure_cpu_allocated(event.cpuid)
+            tc = self.tmp_c_states[event.cpuid]
         if len(tc['start_ts'])>len(tc['end_ts']):
             tc['end_ts'].append(event.timestamp)
             self.missed_power_end +=1
@@ -55,8 +58,11 @@ cpufreq_bg		#ffddee
         self.generic_process_start(process,event, build_p_stack=False)
     @staticmethod
     def stop_cpu_idle(self, event):
-        self.ensure_cpu_allocated(event.cpuid)
-        tc = self.tmp_c_states[event.cpuid]
+        try:
+            tc = self.tmp_c_states[event.cpuid]
+        except:
+            self.ensure_cpu_allocated(event.cpuid)
+            tc = self.tmp_c_states[event.cpuid]
         if len(tc['start_ts'])>len(tc['end_ts']):
             name = colors.get_colorname_by_id(tc['types'][-1])
             tc['end_ts'].append(event.timestamp)

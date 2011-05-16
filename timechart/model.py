@@ -303,19 +303,25 @@ class tcProject(HasTraits):
                     p['start_ts'].append(event.timestamp)
                     p['types'].append(colors.get_color_id("running"))
                     p['cpus'].append(event.common_cpu)
+    def generic_process_single_event(self,process,event):
+        if len(process['start_ts'])>len(process['end_ts']):
+            process['end_ts'].append(event.timestamp)
+        # mark process to use cpu
+        process['start_ts'].append(event.timestamp)
+        process['types'].append(colors.get_color_id("running"))
+        process['cpus'].append(event.common_cpu)
+        process['end_ts'].append(event.timestamp)
 
 
     def do_function_default(self,event):
         process = self.generic_find_process(0,"kernel function:%s"%(event.callee),"function")
-        self.generic_process_start(process,event)
-        self.generic_process_end(process,event)
+        self.generic_process_single_event(process,event)
 
     def do_event_default(self,event):
         event.name = event.event.split(":")[0]
         process = self.generic_find_process(0,"event:%s"%(event.name),"event")
-        self.generic_process_start(process,event)
+        self.generic_process_single_event(process,event)
         process['comments'].append(event.event)
-        self.generic_process_end(process,event)
 
 
     def start_parsing(self, get_partial_text):
