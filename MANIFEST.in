@@ -4,4 +4,4 @@ include readme.txt
 include setup.py
 include *.desktop
 include timechart/images/*
-
+include pytimechart-record
