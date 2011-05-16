@@ -1,7 +1,9 @@
 from decimal import *
 import re
-import sys
+import sys,os
 from timechart.plugin import get_plugins_additional_ftrace_parsers
+from enthought.pyface.api import ProgressDialog
+
 # take the TP_printk from the /include/trace/events dir
 # syntax is event_name, printk, printk_args...
 events_desc = [
@@ -127,7 +129,19 @@ def ftrace_open(filename):
 #@profile
 def parse_ftrace(filename,callback):
     fid = ftrace_open(filename)
-
+    progress = ProgressDialog(title="ftrace", message="loading %s..."%(os.path.basename(filename)), max=100, show_time=True, can_cancel=True)
+    progress.open()
+    try:
+        fid.seek(0,2)
+    except ValueError:
+        # gzip do not support seek end
+        # do we uncompress everything. :-/
+        # parsing is already far slower than uncompressing.
+        while fid.read(1024):
+            pass
+    totsize = fid.tell()
+    fid.seek(0,0)
+    last_percent = 0
     # the base regular expressions
     event_re = re.compile(
         r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\]\s+([0-9.]+): (.*): (.*)')
@@ -136,6 +150,12 @@ def parse_ftrace(filename,callback):
     last_timestamp = 0
     linenumber = 0
     for line in fid:
+        percent = int(fid.tell()*100./totsize)
+        if percent != last_percent:
+            last_percent = percent
+            (cont, skip) = progress.update(percent)
+            if not cont or skip:
+                break
         linenumber+=1
         line = line.rstrip()
         res = event_re.match(line)
