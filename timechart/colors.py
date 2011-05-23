@@ -17,6 +17,7 @@ selected_bg		#ACD7E6
 idle			#000000
 waiting_for_cpu		#ffff88
 running			#555555
+overview       		#333333
 shown_process		#111111
 hidden_process		#777777
 

@@ -12,7 +12,7 @@ from enthought.kiva.traits.kiva_font_trait import KivaFont
 from enthought.enable.api import black_color_trait, KeySpec
 
 from model import tcProject
-from colors import get_aggcolor_by_id
+from colors import get_aggcolor_by_id,get_color_id
 import tools
 from numpy import linspace,arange,amin,amax
 from math import log
@@ -29,6 +29,7 @@ class TimeChartOptions(HasTraits):
     show_p_states = Bool(True)
     show_c_states = Bool(True)
     auto_zoom_y = Bool(True)
+    use_overview = Bool(True)
 
     proj = tcProject
 
@@ -46,6 +47,8 @@ class TimeChartOptions(HasTraits):
         self.plot.invalidate()
     def _show_c_states_changed(self):
         self.plot.invalidate()
+    def _use_overview_changed(self):
+        self.plot.invalidate()
     def _auto_zoom_y_changed(self,val):
         self.plot.auto_zoom_y()
         self.auto_zoom_timer.Stop()
@@ -62,6 +65,8 @@ class TimeChartOptions(HasTraits):
         self.show_p_states = value
     def _on_toggle_auto_zoom_y(self, value):
         self.show_auto_zoom_y = value
+    def _on_toggle_overview(self, value):
+        self.use_overview = value
 
 class TextView(HasTraits):
     text = Str
@@ -193,6 +198,12 @@ class tcPlot(BarPlot):
     def _draw_timechart(self,gc,tc,label,base_y):
         bar_middle_y = self.first_bar_y+(base_y+.5)*self.bar_height
         points = self._gather_timechart_points(tc.start_ts,tc.end_ts,base_y,.2)
+        overview = None
+        if self.options.use_overview:
+            if points.size > 500:
+                overview = tc.get_overview_ts(self.overview_threshold)
+                points = self._gather_timechart_points(overview[0],overview[1],base_y,.2)
+            
         if self.options.remove_pids_not_on_screen and points.size == 0:
             return 0
         if bar_middle_y+self.bar_height < self.y or bar_middle_y-self.bar_height>self.y+self.height:
@@ -218,10 +229,11 @@ class tcPlot(BarPlot):
             upper_right_pts = self.map_screen(points[:,(1,3)])
             bounds = upper_right_pts - lower_left_pts
 
-            if points.size>1000: # critical path, we only draw unicolor rects
+            if overview: # critical path, we only draw unicolor rects
                 #calculate the mean color
-                t = mean(tc.types[points[0][4]:points[-1][4]])
-                gc.set_fill_color(get_aggcolor_by_id(int(t)))
+                #print points.size
+                gc.set_fill_color(get_aggcolor_by_id(get_color_id("overview")))
+                gc.set_alpha(.9)
                 rects=column_stack((lower_left_pts, bounds))
                 gc.rects(rects)
                 gc.draw_path()
@@ -356,6 +368,12 @@ class tcPlot(BarPlot):
                       font=font,
                       color=self.title_color,
                       rotate_angle=0)
+        # we unmap four pixels on screen, and find the nearest greater power of two
+        # this by rounding the log2, and then exponentiate again
+        # as the overview data is cached, this avoids using too much memory
+        four_pixels = self.index_mapper.map_data(array((0,4)))
+        self.overview_threshold = 1<<int(log(1+int(four_pixels[1] - four_pixels[0]),2))
+
         for i in xrange(len(self.proj.c_states)):
             tc = self.proj.c_states[i]
             if self.options.show_c_states:

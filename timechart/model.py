@@ -6,10 +6,11 @@ import numpy as np
 import traceback
 import re
 from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
-    DelegatesTo, Int, Long, Enum, Color, List, Bool, CArray, Property, cached_property, String, Button
+    DelegatesTo, Int, Long, Enum, Color, List, Bool, CArray, Property, cached_property, String, Button, Dict
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
 from enthought.enable.colors import ColorTrait
 from enthought.pyface.image_resource import ImageResource
+from enthought.pyface.api import ProgressDialog
 
 from process_table import process_table_editor
 import colors
@@ -36,6 +37,7 @@ class tcGeneric(HasTraits):
     max_types = Property(Int)
     max_latency = Property(Int)
     max_latency_ts = Property(CArray)
+    overview_ts_cache = Dict({})
 
     @cached_property
     def _get_total_time(self):
@@ -61,7 +63,39 @@ class tcGeneric(HasTraits):
             ends[-1] = end
         types = self.types[low_i:high_i]
         return starts,ends,types
-
+    def get_overview_ts(self, threshold):
+        """merge events so that there never are two events in the same "threshold" microsecond
+        """
+        if threshold in self.overview_ts_cache:
+            return self.overview_ts_cache[threshold]
+        # we recursively use the lower threshold caches
+        # this allows to pre-compute the whole cache more efficiently
+        if threshold > 4:
+            origin_start_ts, origin_end_ts = self.get_overview_ts(threshold/2)
+        else:
+            origin_start_ts, origin_end_ts = self.start_ts, self.end_ts
+        # only calculate overview if it worth.
+        if len(origin_start_ts) < 500:
+            overview = (origin_start_ts, origin_end_ts)
+            self.overview_ts_cache[threshold] = overview
+            return overview
+        # assume at least one event
+        start_ts = []
+        end_ts = []
+        # start is the first start of the merge list
+        start = origin_start_ts[0]
+        i = 1
+        while i < len(origin_start_ts):
+            if origin_start_ts[i] > origin_start_ts[i-1] + threshold:
+                start_ts.append(start)
+                end_ts.append(origin_end_ts[i-1])
+                start = origin_start_ts[i]
+            i += 1
+        start_ts.append(start)
+        end_ts.append(origin_end_ts[i-1])
+        overview = (numpy.array(start_ts), numpy.array(end_ts))
+        self.overview_ts_cache[threshold] = overview
+        return overview
     # UI traits
     default_bg_color = Property(ColorTrait)
     bg_color = Property(ColorTrait)
@@ -378,6 +412,9 @@ class tcProject(HasTraits):
             tc = self.tmp_process[pid,comm]
             if len(tc['end_ts'])>0 and last_ts < tc['end_ts'][-1]:
                 last_ts = tc['end_ts'][-1]
+        progress = ProgressDialog(title="precomputing data", message="precomputing overview data...", max=len(self.tmp_process), show_time=False, can_cancel=False)
+        progress.open()
+        i = 0
         for pid,comm in self.tmp_process:
             tc = self.tmp_process[pid,comm]
             if self.process_types.has_key(tc['type']):
@@ -393,7 +430,12 @@ class tcProject(HasTraits):
             t.cpus = numpy.array(tc['cpus'])
             t.comments = tc['comments'] #numpy.array(tc['comments'])
             t.process_type = tc["type"]
+            # precompute 16 levels of overview cache
+            t.get_overview_ts(1<<16)
             processes.append(t)
+            progress.update(i)
+            i += 1
+        progress.close()
         def cmp_process(x,y):
             # sort process by type, pid, comm
             def type_index(t):

@@ -20,8 +20,7 @@ class aboutBox(HasTraits):
         width=500,
         title="about"
         )
-        
-    
+
 class tcActionHandler(Handler):
     handler_list = []
     actions = {}
@@ -69,6 +68,7 @@ def _create_toolbar_actions():
         {"name": "toggle_wakes","tooltip":'This will show/hide the wake_events.\nThis slows down a lot graphics'},
         {"name": "toggle_cpufreq","tooltip":'This will show/hide the cpufreq representation.', "default":True},
         {"name": "toggle_cpuidle","tooltip":'This will show/hide the cpuidle representation.', "default":True},
+#        {"name": "toggle_overview","tooltip":'This will accelerate plotting by merging contiguous events when zoomed out.', "default":True},
         {},
         {"name": "trace_text","tooltip":'show the text trace of the selection'},
         {"name": "zoom","tooltip":'zoom on the selection'},
