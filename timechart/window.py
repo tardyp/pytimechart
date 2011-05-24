@@ -5,8 +5,7 @@ from enthought.traits.ui.menu import Action, MenuBar, ToolBar, Menu, Separator
 from model import tcProject
 from plot import tcPlot, create_timechart_container
 from enthought.enable.component_editor import ComponentEditor
-from enthought.pyface.image_resource \
-    import ImageResource
+from actions import _create_toolbar_actions, _create_menubar_actions
 
 __version__="0.9.1"
 class aboutBox(HasTraits):
@@ -34,61 +33,7 @@ class tcActionHandler(Handler):
                     fn(getattr(UIInfo,name[len("_on_"):]).checked)
                 else:
                     fn()
-def _buildAction(desc):
-    if len(desc) == 0:
-        return Separator()
-    exec("tcActionHandler.%s = lambda self,i:self.chooseAction(i,'_on_%s')"%(desc["name"],desc["name"]))
-    style = desc["name"].startswith("toggle") and "toggle" or "push"
-    default = False
-    if "default" in desc:
-        default = desc["default"]
-    action = Action(name=desc["name"], action=desc["name"],
-                  tooltip=desc["tooltip"],
-                  image=ImageResource(desc["name"]),
-                  style=style,
-                  checked=default)
-    tcActionHandler.actions[desc["name"]] = action
-    return action
 
-def _create_toolbar_actions():
-    actions = (
-        {},
-        {"name": "invert","tooltip":'invert processes show/hide value.\nThis is useful, when you are fully zoomed,\nand you want to see if you are not missing some valuable info\nin the hidden processes'},
-        {"name": "select_all","tooltip":'select_all/unselect_all'},
-        {},
-        {"name": "show","tooltip":'show selected processes in the timechart'},
-        {"name": "hide","tooltip":'hide selected processes in the timechart'},
-        {},
-        {"name": "hide_others","tooltip":'Hide process that are not shown at current zoom window'},
-        {"name": "hide_onscreen","tooltip":'Hide process that are shown at current zoom window'},
-        {},
-        {"name": "toggle_autohide","tooltip":'This will autoHide process that do not have any events in the current zooming window', "default":True},
-        {"name": "toggle_auto_zoom_y","tooltip":'automatically set the y scale to fit the number of process shown', "default":True},
-        {},
-        {"name": "toggle_wakes","tooltip":'This will show/hide the wake_events.\nThis slows down a lot graphics'},
-        {"name": "toggle_cpufreq","tooltip":'This will show/hide the cpufreq representation.', "default":True},
-        {"name": "toggle_cpuidle","tooltip":'This will show/hide the cpuidle representation.', "default":True},
-#        {"name": "toggle_overview","tooltip":'This will accelerate plotting by merging contiguous events when zoomed out.', "default":True},
-        {},
-        {"name": "trace_text","tooltip":'show the text trace of the selection'},
-        {"name": "zoom","tooltip":'zoom on the selection'},
-        {"name": "unzoom","tooltip":'unzoom to show the whole trace'},
-        )
-    ret = []
-    for i in actions:
-        ret.append(_buildAction(i))
-    return tuple(ret)
-def _create_menubar_actions():
-    desc = (('&File', ( {"name": "open","tooltip":'open new file into pytimechart'},
-                        {"name": "exit","tooltip":'exit pytimechart'})),
-            ('&Help', ( {"name": "about","tooltip":'about'},)))
-    ret = []
-    for menu in desc:
-        actions = []
-        for action in menu[1]:
-            actions.append(_buildAction(action))
-        ret.append(Menu(*tuple(actions), name = menu[0]))
-    return tuple(ret)
 class tcWindow(HasTraits):
     project = tcProject
     plot = tcPlot
