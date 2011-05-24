@@ -33,7 +33,7 @@ if __name__ == "__main__":
         extraArguments = {}
     ### Now the actual set up call
     setup (
-        name = DOCLINES["title"][0],
+        name = DOCLINES["title"][1],
         classifiers = [ c.strip() for c in """\
                 License :: OSI Approved :: BSD License
                 Programming Language :: Python
@@ -48,8 +48,8 @@ if __name__ == "__main__":
         version = version,
         url = "http://gitorious.org/pytimechart",
         download_url = "http://gitorious.org/pytimechart",
-        description = DOCLINES["shortdesc"][0],
-        long_description = '\n'.join(DOCLINES["longdesc"]),
+        description = DOCLINES["shortdesc"][1],
+        long_description = '\n'.join(DOCLINES["longdesc"][1:]),
         author = "Pierre Tardy",
         author_email = "tardyp@gmail.com",
         install_requires = [
