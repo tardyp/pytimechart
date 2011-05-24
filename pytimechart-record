@@ -38,8 +38,8 @@ stop()
 {
    echo >set_event
    echo 0 >tracing_enabled
-   output=~/trace`date +%y-%m-%d-%H-%M-%S`.txt.gz
-   cat trace | gzip > $output
+   output=~/trace`date +%y-%m-%d-%H-%M-%S`.txt.lzma
+   cat trace | lzma > $output
    echo trace written to $output
 }
 COMMAND="$1"
