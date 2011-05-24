@@ -7,7 +7,7 @@ from plot import tcPlot, create_timechart_container
 from enthought.enable.component_editor import ComponentEditor
 from actions import _create_toolbar_actions, _create_menubar_actions
 
-__version__="0.9.1"
+__version__="0.9.2"
 class aboutBox(HasTraits):
     program = Str("pytimechart: linux traces exploration and visualization")
     author = Str("Pierre Tardy <tardyp@gmail.com>")
