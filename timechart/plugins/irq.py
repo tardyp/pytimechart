@@ -35,12 +35,10 @@ class irq(plugin):
     @staticmethod
     def do_event_softirq_entry(self,event):
         event.irq = event.vec
-        event.name = ""
         return irq.do_event_irq_handler_entry(self,event,"soft")
     @staticmethod
     def do_event_softirq_exit(self,event):
         event.irq = event.vec
-        event.name = ""
         return irq.do_event_irq_handler_exit(self,event,"soft")
 
     @staticmethod
@@ -48,5 +46,16 @@ class irq(plugin):
         process = self.generic_find_process(0,"work:%s"%(event.func),"work")
         self.generic_process_start(process,event)
         self.generic_process_end(process,event)
+
+    @staticmethod
+    def do_event_softirq_raise(self,event):
+        p_stack = self.cur_process[event.common_cpu]
+        softirqname = "softirq:%d:%s"%(event.vec,event.name)
+        if p_stack:
+            p = p_stack[-1]
+            self.wake_events.append(((p['comm'],p['pid']),(softirqname,0),event.timestamp))
+        else:
+            p = self.generic_find_process(0,softirqname+" raise","softirq")
+            self.generic_process_single_event(p,event)
 
 plugin_register(irq)

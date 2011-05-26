@@ -22,6 +22,7 @@ events_desc = [
     ('softirq_exit','softirq=%d action=%s','vec','name'),
     ('softirq_entry','vec=%d [action=%s]','vec','name'),
     ('softirq_exit','vec=%d [action=%s]','vec','name'),
+    ('softirq_raise','vec=%d [action=%s]','vec','name'),
     ('irq_handler_entry', 'irq=%d handler=%s','irq','name'),
     ('irq_handler_entry', 'irq=%d name=%s','irq','name'),
     ('irq_handler_exit', 'irq=%d return=%s','irq','ret'),
