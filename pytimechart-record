@@ -15,7 +15,13 @@ start()
 #  echo function > current_tracer
 #  echo hsi* >> set_ftrace_filter
 
-   cat > set_event << EOF
+   echo  > set_event
+   (
+   while read i
+   do
+     echo $i >> set_event
+   done
+   ) <<EOF
 sched:sched_wakeup
 sched:sched_switch
 timer:timer_init
@@ -28,6 +34,8 @@ timer:hrtimer_expire_exit
 timer:itimer_expire
 workqueue:workqueue_execution
 workqueue:workqueue_execution_end
+workqueue:workqueue_execute
+workqueue:workqueue_execute_end
 power:*
 irq:*
 EOF
