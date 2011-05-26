@@ -30,6 +30,7 @@ cpufreq_bg		#ffddee
         ('power_frequency',   'type=%d state=%d', 'type','state'),
         #('power_end', 'nothing interesting to parse'),
         ('cpu_idle',  'state=%d cpu_id=%d', 'state', 'cpuid'),
+        ('cpu_frequency',  'state=%d cpu_id=%d', 'state', 'cpuid'),
         ]
 
     additional_process_types = {
@@ -95,18 +96,22 @@ cpufreq_bg		#ffddee
         cpu_idle.stop_cpu_idle(self, event)
 
     @staticmethod
-    def do_event_power_frequency(self,event):
+    def do_event_cpu_frequency(self,event):
         self.ensure_cpu_allocated(event.common_cpu)
-        if event.type==2:# p_state
-            tc = self.tmp_p_states[event.common_cpu]
-            if len(tc['types']) > 0:
-                name = tc['types'][-1]
-                process = self.generic_find_process(0,"cpu%d/freq:%s"%(event.cpuid,name),"cpufreq")
-                self.generic_process_end(process,event, build_p_stack=False)
-            tc['start_ts'].append(event.timestamp)
-            tc['types'].append(event.state)
-            name = event.state
+        tc = self.tmp_p_states[event.cpuid]
+        if len(tc['types']) > 0:
+            name = tc['types'][-1]
             process = self.generic_find_process(0,"cpu%d/freq:%s"%(event.cpuid,name),"cpufreq")
-            self.generic_process_start(process,event, build_p_stack=False)
+            self.generic_process_end(process,event, build_p_stack=False)
+        tc['start_ts'].append(event.timestamp)
+        tc['types'].append(event.state)
+        name = event.state
+        process = self.generic_find_process(0,"cpu%d/freq:%s"%(event.cpuid,name),"cpufreq")
+        self.generic_process_start(process,event, build_p_stack=False)
+    @staticmethod
+    def do_event_power_frequency(self,event):
+        if event.type==2:# p_state
+            event.cpuid = event.common_cpu
+            cpu_idle.do_event_cpu_frequency(self, event)
 
 plugin_register(cpu_idle)
