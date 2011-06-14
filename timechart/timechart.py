@@ -37,28 +37,47 @@ from window import open_file
 
 
 
-def main(prof = len(sys.argv)>2):
+def main():
+    import optparse
+    parser = optparse.OptionParser(usage="""\
+%prog [options] [trace.txt|trace.txt.gz|trace.txt.lzma|trace.dat]
+
+pytimechart - Fast graphical exploration and visualisation for linux kernel traces.""")
+    parser.add_option("-p", "--prof", dest="prof", action="store_true",
+                      help="activate profiling",
+                      default=False)
+    (options, args) = parser.parse_args()
+
     # Create the GUI (this does NOT start the GUI event loop).
     gui = GUI()
-    if len(sys.argv)>1:
-        fn = sys.argv[1]
+    if len(args) == 0:
+        args = [None]
+    for fn in args:
+        if not open_file(fn):
+            sys.exit(0)
+    if options.prof:
+        import cProfile
+        dict = {"gui":gui}
+        cProfile.runctx('gui.start_event_loop()',dict,dict,'timechart.prof')
     else:
-        fn = None
-    if open_file(fn):
-        if prof:
-            import cProfile
-            dict = {"gui":gui}
-            cProfile.runctx('gui.start_event_loop()',dict,dict,'timechart.prof')
-        else:
-            gui.start_event_loop()
+        gui.start_event_loop()
 
 # used for profiling, and regression tests
-def just_open(prof = len(sys.argv)>2):
-    if len(sys.argv)>1:
-        fn = sys.argv[1]
+def just_open():
+    import optparse
+    parser = optparse.OptionParser(usage="""\
+%prog [options] [trace.txt|trace.txt.gz|trace.txt.lzma|trace.dat]
+
+pytimechart_parse_test - just test parsing backend...""")
+    parser.add_option("-p", "--prof", dest="prof", action="store_true",
+                      help="activate profiling",
+                      default=False)
+    (options, args) = parser.parse_args()
+    if len(args) > 0:
+        fn = args[0]
     else:
-        fn = None
-    if prof:
+        return
+    if options.prof:
         import cProfile
         dict = {"open_file":open_file,"fn":fn}
         cProfile.runctx('open_file(fn)',dict,dict,'timechart.prof')
