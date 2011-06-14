@@ -1,6 +1,97 @@
 pyTimechart User Guide
 **********************
 
+Installation
+============
+
+pytimechart is based on the chaco graphic library, who is itself based on a lot of python technology. So its better to be helped by distros.
+Easiest installation varies between OS
+
+Ubuntu, and debian based linux distros
+--------------------------------------
+apt-get and easy_install are your friends::
+
+   sudo apt-get install python-chaco
+   sudo easy_install pytimechart
+
+Fedora based linux distros
+--------------------------
+yum and easy_install are your friends::
+
+   sudo yum install python-chaco
+   sudo easy_install pytimechart
+
+Windows
+-------
+Windows is not as easy, but pythonxy still helps a lot.
+Easiest way is to install chaco is to use pythonxy python
+distribution. 
+
+ * http://pythonxy.com
+
+**You need to make sure that "ETS" and "wxpython" are selected for
+installation**. 
+
+They are not selected in default install. Then, you
+can use easy_install to install pytimechart. In the command line
+window:: 
+
+   easy_install pytimechart
+
+Alternatively, you can download the sources of pytimechart, and double
+click on the timechart.py script at root of tarball
+
+ * http://gitorious.org/pytimechart/pytimechart/archive-tarball/master
+
+OSX
+---
+You can use EPD to run pytimechart on OSX. Please note, that I have
+issues to make it run on latest version of EPD/pytimechart.
+
+ * http://www.enthought.com/products/epd.php
+
+Recording a trace
+=================
+Pytimechart is only a trace visualizer, it does not actually make the
+trace. You have to generate it with other programs.
+
+Pytimechart supports parser for 3 kind of traces available on
+linux. `ftrace`_, `perf`_ and `trace-cmd`_. Problem with perf and trace-cmd, is
+that their python binding are not currently packaged by
+distributions. You'll have to install them from source, and making
+sure you compile the python bindings. (usually build if you have
+python-dev package) Because of this, its currently recommended to use
+ftrace with pytimechart. A simple script is provided with the source
+of pytimechart: **pytimechart-record**
+
+.. _ftrace: http://lxr.linux.no/linux+v2.6.39/Documentation/trace/ftrace.txt
+.. _perf: http://lxr.linux.no/linux+v2.6.39/tools/perf/Documentation/perf-record.txt
+.. _trace-cmd: http://lwn.net/Articles/341902/
+
+ * http://gitorious.org/pytimechart/pytimechart/blobs/master/pytimechart-record
+
+Basic usage of this script is (as root)::
+
+ # pytimechart-record start
+ # ... run your workload here
+ # pytimechart-record stop
+ trace written to ~/trace11-06-11-20-13-26.txt.lzma
+
+The script will produce you a timestamped .txt.lzma file that you can
+feed directly to pytimechart::
+
+ pytimechart ~/trace11-06-11-20-13-26.txt.lzma
+
+unlike perf and trace-cmd, this script write the data to filesystem at
+the "stop". During the workload, trace is kept in memory. I never
+needed any workload that would need more than 50MB of trace
+buffer.
+
+You can modify the script as you wish, but dont worry about removing
+some tracepoints. They are really very low overhead, and can be
+filtered out by pytimechart easily if they are too noisy. Every trace
+type can make sense at some point. Its better to have it in.
+
 User Interface
 ==============
 The UI is divided into 3 parts

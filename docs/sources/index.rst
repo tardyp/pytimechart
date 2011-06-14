@@ -1,6 +1,6 @@
 .. DESCtitle
 
-pyTimechart
+pytimechart
 ===========
 .. DESCshortdesc
 
