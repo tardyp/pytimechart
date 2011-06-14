@@ -58,8 +58,11 @@ if __name__ == "__main__":
             'TraitsBackendWX >= 3.0',
             'Enable >= 3.0',
             'Chaco >= 3.0',
-            'optparse',
         ],
+	extra_requires = {
+            'LZMA' : [ 'pyliblzma >= 0.5' ]
+            },
+
         license = "BSD",
         platforms = ["Windows", "Linux", "Mac OS-X", # actually did not manage to make it work on osx because of Traits..
                      "Unix", "Solaris"],

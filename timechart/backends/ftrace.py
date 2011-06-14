@@ -113,7 +113,7 @@ def load_tracecmd(filename,callback):
         events[first_cpu] = t.read_event(first_cpu)
         if events[first_cpu] == None:
             cpu_event_list_not_empty -= 1
-# seemlessly open gziped of raw text files
+# seamlessly open gziped of raw text files
 def ftrace_open(filename):
     if filename.endswith(".gz"):
         import gzip
@@ -122,7 +122,7 @@ def ftrace_open(filename):
         try:
             import lzma
         except:
-            raise Exception("lzma module could not be imported. Please install python-lzma to seemlessly open lzma compressed file")
+            raise Exception("lzma module could not be imported. Please install python-lzma to seamlessly open lzma compressed file: http://pypi.python.org/pypi/pyliblzma")
         return lzma.LZMAFile(filename,"r")
     else:
         return open(filename,"r")
