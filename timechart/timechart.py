@@ -51,7 +51,7 @@ pytimechart - Fast graphical exploration and visualisation for linux kernel trac
     # Create the GUI (this does NOT start the GUI event loop).
     gui = GUI()
     if len(args) == 0:
-        args = [None]
+        args.append("dummy")
     for fn in args:
         if not open_file(fn):
             sys.exit(0)

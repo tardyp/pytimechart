@@ -145,6 +145,8 @@ class tcPlot(BarPlot):
     title_font = KivaFont('modern 9')
     # The font of the title.
     title_font_large = KivaFont('modern 15')
+    # The font of the title.
+    title_font_huge = KivaFont('modern 20')
     # The spacing between the axis line and the title
     title_spacing = Trait('auto', 'auto', Float)
     # The color of the title.
@@ -399,6 +401,18 @@ class tcPlot(BarPlot):
         self.on_screen = on_screen
         if self.options.show_wake_events:
             self._draw_wake_ups(gc,processes_y)
+
+        message = ""
+        if self.proj.filename=="dummy":
+            message = "please load a trace file in the 'file' menu"
+        elif len(self.proj.processes)==0:
+            message = "no processes??! is your trace empty?"
+        if message:
+            label.text = message
+            label.font = self.title_font_huge
+            gc.translate_ctm(100,(self.y+self.height)/2)
+            label.draw(gc)
+
         gc.restore_state()
         self.min_y = y
         if self.options.auto_zoom_y:
@@ -432,6 +446,9 @@ def create_timechart_container(project):
             low = min(low,tc.start_ts[0])
             high = max(high,tc.end_ts[-1])
     project.process_stats(low,high)
+    if low > high:
+        low=0
+        high=1
     # we have the same x_mapper/range for each plots
     index_range = DataRange1D(low=low, high=high)
     index_mapper = LinearMapper(range=index_range,domain_limit=(low,high))

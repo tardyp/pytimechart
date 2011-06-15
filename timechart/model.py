@@ -412,8 +412,9 @@ class tcProject(HasTraits):
             tc = self.tmp_process[pid,comm]
             if len(tc['end_ts'])>0 and last_ts < tc['end_ts'][-1]:
                 last_ts = tc['end_ts'][-1]
-        progress = ProgressDialog(title="precomputing data", message="precomputing overview data...", max=len(self.tmp_process), show_time=False, can_cancel=False)
-        progress.open()
+        if len(self.tmp_process) >0:
+            progress = ProgressDialog(title="precomputing data", message="precomputing overview data...", max=len(self.tmp_process), show_time=False, can_cancel=False)
+            progress.open()
         i = 0
         for pid,comm in self.tmp_process:
             tc = self.tmp_process[pid,comm]
@@ -435,7 +436,9 @@ class tcProject(HasTraits):
             processes.append(t)
             progress.update(i)
             i += 1
-        progress.close()
+        if len(self.tmp_process) > 0:
+            progress.close()
+            self.tmp_process = []
         def cmp_process(x,y):
             # sort process by type, pid, comm
             def type_index(t):

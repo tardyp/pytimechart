@@ -15,7 +15,7 @@ def _buildAction(desc):
     if "default" in desc:
         default = desc["default"]
     desc["tooltip"] = desc["tooltip"].strip()
-    action = Action(name=desc["name"], action=desc["name"],
+    action = Action(name=desc["name"].replace("_"," "), action=desc["name"],
                   tooltip=desc["tooltip"],
                   image=ImageResource(desc["name"]),
                   style=style,
@@ -105,9 +105,9 @@ You can also save some part of a trace to another file with this option
         ret.append(_buildAction(i))
     return tuple(ret)
 def _create_menubar_actions():
-    desc = (('&File', ( {"name": "open","tooltip":'open new file into pytimechart'},
+    desc = (('&File', ( {"name": "open_trace_file","tooltip":'open new file into pytimechart'},
                         {"name": "exit","tooltip":'exit pytimechart'})),
-            ('&Help', ( {"name": "about","tooltip":'about'},)))
+            ('&Help', ( {"name": "about","tooltip":'about'},{"name": "doc","tooltip":'doc'})))
     ret = []
     for menu in desc:
         actions = []
