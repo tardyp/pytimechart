@@ -103,7 +103,7 @@ prof = 0
 
 import wx
 def open_dialog():
-    dlg = wx.FileDialog(None, "Choose a file", "", "", "*.txt;*.gz;*.lzma", wx.OPEN)
+    dlg = wx.FileDialog(None, "Choose a file", "", "", "*.txt;*.gz;*.lzma;*.dat", wx.OPEN)
     rv = None
     if dlg.ShowModal() == wx.ID_OK:
         filename=dlg.GetFilename()
@@ -127,8 +127,8 @@ def save_dialog():
 def open_file(fn=None):
     from backends.perf import detect_perf
     from backends.ftrace import detect_ftrace
-    from backends.tracecmd import detect_tracecmd
     from backends.dummy import detect_dummy
+    from backends.trace_cmd import detect_tracecmd
     if fn == None:
         fn = open_dialog()
         if fn == None:
