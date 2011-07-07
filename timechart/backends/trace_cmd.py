@@ -1,5 +1,13 @@
 import sys,os
 
+additional_event_field = [
+    ('softirq_entry', 'name'),
+    ]
+
+def get_softirq_entry_name(event):
+    softirq_list = ["HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "BLOCK_IOPOLL", "TASKLET", "SCHED", "HRTIMER", "RCU"]
+    return softirq_list[event.vec]
+
 class TraceCmdEventWrapper:
     def __init__(self,event):
         self.tracecmd_event = event
@@ -9,15 +17,27 @@ class TraceCmdEventWrapper:
         self.common_comm = str(event.comm)
         self.common_pid = int(event.pid)
         self.timestamp = event.ts/1000
+
     def __getattr__(self,name):
         try:
             f = self.tracecmd_event[name]
         except :
+            attr = self.get_additional_event_field(name)
+            if attr:
+                return attr
             raise  AttributeError(name+ " not in "+str( self.tracecmd_event.keys()))
         try:
             return long(f)
         except :
             return str(f)
+
+    def get_additional_event_field(self, name):
+        for field in additional_event_field:
+            event = field[0]
+            attr = field[1]
+            if ((self.event==event) & (name==attr)):
+                func = eval("get_"+event+"_"+attr)
+                return func(self)
 
 def parse_tracecmd(filename,callback):
     try:
