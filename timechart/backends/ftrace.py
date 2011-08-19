@@ -18,17 +18,6 @@ events_desc = [
     ('sched_wakeup','task %s:%d [%d] success=%d [%d]','comm', 'pid', 'prio', 'success', 'cpu'),
     ('sched_wakeup','task %s:%d [%d] success=%d','comm', 'pid', 'prio', 'success'),
     ('sched_wakeup','comm=%s pid=%d prio=%d success=%d target_cpu=%d','comm', 'pid', 'prio', 'success', 'cpu'),
-    ('softirq_entry','softirq=%d action=%s','vec','name'),
-    ('softirq_exit','softirq=%d action=%s','vec','name'),
-    ('softirq_entry','vec=%d [action=%s]','vec','name'),
-    ('softirq_exit','vec=%d [action=%s]','vec','name'),
-    ('softirq_raise','vec=%d [action=%s]','vec','name'),
-    ('irq_handler_entry', 'irq=%d handler=%s','irq','name'),
-    ('irq_handler_entry', 'irq=%d name=%s','irq','name'),
-    ('irq_handler_exit', 'irq=%d return=%s','irq','ret'),
-    ('irq_handler_exit', 'irq=%d ret=%s','irq','ret'),
-    ('workqueue_execution','thread=%s func=%s\\+%s/%s','thread','func','func_offset','func_size'),
-    ('workqueue_execution','thread=%s func=%s','thread','func'),
     ]
 events_desc += get_plugins_additional_ftrace_parsers()
 # pre process our descriptions to transform it into re
@@ -144,7 +133,7 @@ def parse_ftrace(filename,callback):
     last_percent = 0
     # the base regular expressions
     event_re = re.compile(
-        r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\]\s+([0-9.]+): (.*): (.*)')
+        r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\]\s+([0-9.]+): ([^:]*): (.*)')
     function_re = re.compile(
         r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\]\s+([0-9.]+): (.*) <-(.*)')
     last_timestamp = 0
