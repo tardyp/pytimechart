@@ -27,7 +27,7 @@ Windows is not as easy, but pythonxy still helps a lot.
 Easiest way is to install chaco is to use pythonxy python
 distribution. 
 
- * http://pythonxy.com
+ * http://www.pythonxy.com
 
 **You need to make sure that "ETS" and "wxpython" are selected for
 installation**. 
