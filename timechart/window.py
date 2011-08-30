@@ -44,7 +44,7 @@ class tcActionHandler(Handler):
             fn = getattr(i, name, None)
             if fn is not None:
                 if name.startswith("_on_toggle"):
-                    fn(getattr(UIInfo,name[len("_on_"):]).checked)
+                    fn(getattr(UIInfo,name[len("_on_"):].replace("_"," ")).checked)
                 else:
                     fn()
 
