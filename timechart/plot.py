@@ -64,7 +64,7 @@ class TimeChartOptions(HasTraits):
     def _on_toggle_cpufreq(self, value):
         self.show_p_states = value
     def _on_toggle_auto_zoom_y(self, value):
-        self.show_auto_zoom_y = value
+        self.auto_zoom_y = value
     def _on_toggle_overview(self, value):
         self.use_overview = value
 
