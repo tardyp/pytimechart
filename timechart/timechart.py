@@ -1,7 +1,14 @@
 #!/usr/bin/python
 #------------------------------------------------------------------------------
 import sys
-from enthought.etsconfig.api import ETSConfig
+try:
+    from enthought.etsconfig.api import ETSConfig
+except:
+    print >>sys.stderr, "did you install python-chaco?"
+    print >>sys.stderr, "maybe you did install chaco>=4, then you will need to install the package etsproxy"
+    print >>sys.stderr, "sudo easy_install etsproxy"
+    sys.exit(1)
+
 # select the toolkit we want to use
 # WX is more stable for now
 #ETSConfig.toolkit = 'qt4'
@@ -27,10 +34,13 @@ if os.name=="posix":
         pass
     warnings.showwarning = devnull
     from  enthought.kiva.fonttools.font_manager import fontManager, FontProperties
-    font = FontProperties()
-    font.set_name("DejaVu Sans")
-    fontManager.defaultFont = fontManager.findfont(font)
-    fontManager.warnings = None
+    try:
+        font = FontProperties()
+        font.set_name("DejaVu Sans")
+        fontManager.defaultFont = fontManager.findfont(font)
+        fontManager.warnings = None
+    except: # this code will throw exception on ETS4, which has actually fixed fontmanager
+        pass
 
 from enthought.pyface.api import GUI
 from window import open_file

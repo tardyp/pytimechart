@@ -53,16 +53,9 @@ if __name__ == "__main__":
         author = "Pierre Tardy",
         author_email = "tardyp@gmail.com",
         install_requires = [
-            'Traits >= 3.0',
-            'TraitsGUI >= 3.0',
-            'TraitsBackendWX >= 3.0',
-            'Enable >= 3.0',
-            'Chaco >= 3.0',
+            'Chaco >= 3.0', # you should install that via distro rather than pypi..
+            # 'pyliblzma >= 0.5' # not really mandatory
         ],
-	extra_requires = {
-            'LZMA' : [ 'pyliblzma >= 0.5' ]
-            },
-
         license = "BSD",
         platforms = ["Windows", "Linux", "Mac OS-X", # actually did not manage to make it work on osx because of Traits..
                      "Unix", "Solaris"],

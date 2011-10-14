@@ -1,7 +1,6 @@
 from enthought.traits.api import Color
 from enthought.enable.colors import ColorTrait
-from enthought.kiva.agg.agg import Rgba
-
+from enthought.kiva.agg import Rgba
 # hint: use gcolor2 to pick up colors
 # if you omit several color, it will automatically gradiant...
 _tc_colors_txt = """

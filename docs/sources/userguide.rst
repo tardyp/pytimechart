@@ -11,14 +11,23 @@ Ubuntu, and debian based linux distros
 --------------------------------------
 apt-get and easy_install are your friends::
 
-   sudo apt-get install python-chaco
+   sudo apt-get install python-chaco python-setuptools python-lzma lzma
    sudo easy_install pytimechart
+
+Please note that chaco4.0 introduced incompatible namespace: http://blog.enthought.com/open-source/ets-4-0-released/
+This leads to following error when trying to launch pytimechart::
+
+   ImportError: No module named  enthought.etsconfig.api
+
+To restore original namespace, that pytimechart uses, you will need to install another package::
+
+   sudo easy_install etsproxy
 
 Fedora based linux distros
 --------------------------
 yum and easy_install are your friends::
 
-   sudo yum install python-chaco
+   sudo yum install python-chaco python-setuptools
    sudo easy_install pytimechart
 
 Windows
@@ -68,7 +77,7 @@ of pytimechart: **pytimechart-record**
 .. _perf: http://lxr.linux.no/linux+v2.6.39/tools/perf/Documentation/perf-record.txt
 .. _trace-cmd: http://lwn.net/Articles/341902/
 
- * http://gitorious.org/pytimechart/pytimechart/blobs/master/pytimechart-record
+ * http://gitorious.org/pytimechart/pytimechart/blobs/raw/master/pytimechart-record
 
 Basic usage of this script is (as root)::
 

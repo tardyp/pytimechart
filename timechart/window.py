@@ -8,7 +8,7 @@ from enthought.enable.component_editor import ComponentEditor
 from actions import _create_toolbar_actions, _create_menubar_actions
 
 __doc__ = """http://packages.python.org/pytimechart/"""
-__version__="0.9.3"
+__version__="1.0.0.rc1"
 
 def browse_doc():
     from enthought.etsconfig.api import ETSConfig
