@@ -1,4 +1,5 @@
 from enthought.chaco.tools.api import PanTool, ZoomTool, RangeSelection, PanTool
+from copy import copy
 
 class myZoomTool(ZoomTool):
     """ a zoom tool which change y range only when control is pressed
@@ -9,10 +10,15 @@ class myZoomTool(ZoomTool):
             self.tool_mode = "box"
         else:
             self.tool_mode = "range"
+            oldrange = copy(self.component.value_mapper.range)
+
         super(myZoomTool, self).normal_mouse_wheel(event)
         # restore default zoom mode
         if event.control_down:
             self.tool_mode = "range"
+        else:
+            self.component.value_mapper.range = oldrange
+
     def normal_key_pressed(self, event):
         super(myZoomTool, self).normal_key_pressed(event)
         print event
