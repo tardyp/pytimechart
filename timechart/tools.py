@@ -1,4 +1,5 @@
 from enthought.chaco.tools.api import PanTool, ZoomTool, RangeSelection, PanTool
+from enthought.chaco.tools.tool_states import ZoomState, PanState, GroupedToolState, ToolState
 from copy import copy
 
 class myZoomTool(ZoomTool):
@@ -21,7 +22,6 @@ class myZoomTool(ZoomTool):
 
     def normal_key_pressed(self, event):
         super(myZoomTool, self).normal_key_pressed(event)
-        print event
         class fake_event:
             pass
         my_fake_event = fake_event()
@@ -40,6 +40,60 @@ class myZoomTool(ZoomTool):
             my_fake_event.mouse_wheel*=2
         if my_fake_event.mouse_wheel:
             self.normal_mouse_wheel(my_fake_event)
+    def zoom_in(self, factor=0):
+        if self.tool_mode != "range":
+            return super(myZoomTool, self).zoom_in(factor)
+        if factor == 0:
+            factor = self.zoom_factor
+        new_index_factor = self._index_factor * factor
+        new_value_factor = self._value_factor
+
+        location = self.position
+        x_map = self._get_x_mapper()
+        y_map = self._get_y_mapper()
+        x = x_map.map_data(location[0])
+        cx = x_map.map_data(self.component.bounds[0]/2)
+
+        next = ( x + (cx - x)*(self._index_factor/new_index_factor),
+		y_map.map_data(self.component.bounds[1]/2))
+        prev = (cx,
+                y_map.map_data(self.component.bounds[1]/2))
+
+        pan_state = PanState(prev, next)
+        zoom_state = ZoomState((self._index_factor, self._value_factor),
+                                   (new_index_factor, new_value_factor))
+
+        states = GroupedToolState([pan_state, zoom_state])
+        states.apply(self)
+        self._append_state(states)
+    def zoom_out(self, factor=0):
+        if self.tool_mode != "range":
+            return super(myZoomTool, self).zoom_in(factor)
+        if factor == 0:
+            factor = self.zoom_factor
+
+        new_index_factor = self._index_factor / factor
+
+        new_value_factor = self._value_factor
+        location = self.position
+        x_map = self._get_x_mapper()
+        y_map = self._get_y_mapper()
+        x = x_map.map_data(location[0])
+        cx = x_map.map_data(self.component.bounds[0]/2)
+
+        next = ( x + (cx - x)*(self._index_factor/new_index_factor),
+		y_map.map_data(self.component.bounds[1]/2))
+        prev = (cx,
+                y_map.map_data(self.component.bounds[1]/2))
+
+        pan_state = PanState(prev, next)
+        zoom_state = ZoomState((self._index_factor, self._value_factor),
+                                   (new_index_factor, new_value_factor))
+
+        states = GroupedToolState([pan_state, zoom_state])
+        states.apply(self)
+        self._append_state(states)
+
 
 # left down conflicts with the panning tool
 # just overide and disable change state to moving
