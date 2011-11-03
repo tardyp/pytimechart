@@ -1,5 +1,8 @@
 from enthought.chaco.tools.api import PanTool, ZoomTool, RangeSelection, PanTool
-from enthought.chaco.tools.tool_states import ZoomState, PanState, GroupedToolState, ToolState
+try:
+    from enthought.chaco.tools.tool_states import ZoomState, PanState, GroupedToolState, ToolState
+except:
+  pass
 from copy import copy
 
 class myZoomTool(ZoomTool):
