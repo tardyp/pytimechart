@@ -3,7 +3,7 @@ from timechart import colors
 from timechart.model import tcProcess, _pretty_time
 from enthought.traits.api import Bool
 
-c_state_table = ["C0","C1","C2","C4","C6","S0i1","S0i3"]
+c_state_table = ["C0","C1","C2","C4","C6","S0i1","S0i3","LPMP3"]
 
 #by default it is hidden...
 class tcCpuIdle(tcProcess):
@@ -22,6 +22,7 @@ C5			#1111ff
 C6			#0000ff
 S0i3			#0011ff
 S0i1			#0022ff
+LPMP3                   #0033ff
 cpuidle_bg		#ffdddd
 cpufreq_bg		#ffddee
 """
