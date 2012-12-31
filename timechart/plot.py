@@ -107,7 +107,7 @@ class RangeSelectionTools(HasTraits):
         if value is not None :
             self.start, self.end = amin(value), amax(value)
             time = self.end-self.start
-            self.time = "%d.%03d %03ds"%(time/1000000,(time/1000)%1000,time%1000)
+            self.time = "%d.%03d %03ds  left=%d.%03d %03ds         right=%d.%03d %03ds"%(time/1000000,(time/1000)%1000,time%1000, self.start/1000000, (self.start/1000)%1000, self.start%1000, self.end/1000000, (self.end/1000)%1000, self.end%1000)
             self.plot.immediate_invalidate()
             self._timer.Stop()
             self._timer.Start()
