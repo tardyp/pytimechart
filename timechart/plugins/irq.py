@@ -19,6 +19,10 @@ class irq(plugin):
         ('workqueue_execution','thread=%s func=%s\\+%s/%s','thread','func','func_offset','func_size'),
         ('workqueue_execution','thread=%s func=%s','thread','func'),
         ('workqueue_execution_end','thread=%s func=%s','thread','func'),
+        ('workqueue_queue_work','work struct=%s function=%s workqueue=%s req_cpu=%d cpu=%d','work','function','workqueue', 'req_cpu', 'cpu'),
+        ('workqueue_activate_work','work struct %s','work'),
+        ('workqueue_execute_start','work struct %s: function %s','work','function'),
+        ('workqueue_execute_end','work struct %s','work'),
         ('tasklet_action','%s: %s','state', 'func'),
         ]
 
@@ -27,6 +31,9 @@ class irq(plugin):
         "softirq":(tcProcess, IRQ_CLASS),
         "work":(tcProcess, WORK_CLASS),
         }
+
+    map_work_to_function = {}
+
     @staticmethod
     def do_event_irq_handler_entry(self,event,soft=""):
         process = self.generic_find_process(0,"%sirq%d:%s"%(soft,event.irq,event.name),soft+"irq")
@@ -66,6 +73,24 @@ class irq(plugin):
     def do_event_workqueue_execution_end(self,event):
         process = self.generic_find_process(0,"work:%s:%s"%(event.thread,event.func),"work")
         self.generic_process_end(process,event,False)
+
+    @staticmethod
+    def do_event_workqueue_queue_work(self,event):
+        process = self.generic_find_process(0,"queue work:%s:%s" % (event.work, event.function), "work")
+        self.generic_process_start(process, event, False)
+        self.generic_process_end(process, event, False)
+
+    @staticmethod
+    def do_event_workqueue_execute_start(self,event):
+        process = self.generic_find_process(0,"work:%s:%s" % (event.work, event.function), "work")
+        irq.map_work_to_function[event.work] = event.function
+        self.generic_process_start(process, event, False)
+
+    @staticmethod
+    def do_event_workqueue_execute_end(self,event):
+        if event.work in irq.map_work_to_function:
+            process = self.generic_find_process(0, "work:%s:%s" % (event.work, irq.map_work_to_function[event.work]), "work")
+            self.generic_process_end(process, event, False)
 
     @staticmethod
     def do_event_tasklet_action(self,event):
