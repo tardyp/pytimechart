@@ -32,7 +32,10 @@ pyTimechart processes are not only process in the common unix sense, it can be a
 - http://packages.python.org/pytimechart/
 
 ### Video of ELCE 2011 Conference about pytimechart:
-- http://free-electrons.com/pub/video/2011/elce/elce-2011-tardy-pytimechart-real-world-analysis.webm
+
+<a href="http://free-electrons.com/pub/video/2011/elce/elce-2012-tardy-pytimechart-real-world-analysis.webm">
+<img src="http://free-electrons.com/pub/video/2011/elce/vidcaps/elce-2011-tardy-pytimechart-real-world-analysis-thumb.jpg"></img>
+</a>
 
 ## Submitting Patches
 Patches are very much welcome, especially to support new versions of the tracepoints.
