@@ -2,6 +2,9 @@
 
 a tool to display ftrace (or perf) traces
 
+<img src="https://github.com/tardyp/pytimechart/blob/master/docs/sources/images/pytimechart-overview.png?raw=true">
+</img>
+
 This is a reimplemetation of some of the main features of timechart from Arjan Van de Ven.
 
 pyTimechart is aimed at helping kernel developer to browse into large scale traces.
