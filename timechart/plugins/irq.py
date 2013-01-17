@@ -15,6 +15,7 @@ class irq(plugin):
         ('irq_handler_entry', 'irq=%d name=%s','irq','name'),
         ('irq_handler_exit', 'irq=%d return=%s','irq','ret'),
         ('irq_handler_exit', 'irq=%d ret=%s','irq','ret'),
+        ('workqueue_execution','work struct=%s function=%s\\+%s/%s workqueue=%s req_cpu=%d cpu=%d','struct','func','func_offset','func_size', 'workqueue', 'req_cpu', 'cpu'),
         ('workqueue_execution','thread=%s func=%s\\+%s/%s','thread','func','func_offset','func_size'),
         ('workqueue_execution','thread=%s func=%s','thread','func'),
         ('workqueue_execution_end','thread=%s func=%s','thread','func'),
