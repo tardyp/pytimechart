@@ -275,22 +275,22 @@ class tcProject(HasTraits):
     def generic_find_process(self,pid,comm,ptype,same_pid_match_timestamp=0):
         if self.tmp_process.has_key((pid,comm)):
             return self.tmp_process[(pid,comm)]
-        # else try to find if there has been a process with same pid recently, and different name
-        if same_pid_match_timestamp != 0 and comm != "swapper":
+        # else try to find if there has been a process with same pid recently, and different name. Only for user_process because other traces set pid to 0
+        if same_pid_match_timestamp != 0 and ptype == "user_process":
             for k, p in self.tmp_process.items():
-                if k[0] == pid:
+                if k[0] == pid and p['type'] == "user_process":
                     if len(p['start_ts'])>0 and p['start_ts'][-1] > same_pid_match_timestamp:
                         p['comm'] = comm
                         self.tmp_process[(pid,comm)] = p
                         del self.tmp_process[k]
                         return p
         tmp = {'type':ptype,'comm':comm,'pid':pid,'start_ts':[],'end_ts':[],'types':[],'cpus':[],'comments':[]}
-        if not (pid==0 and comm =="swapper"):
+        if not (pid==0 and ptype == "user_process"):
             self.tmp_process[(pid,comm)] = tmp
         return tmp
 
     def generic_process_start(self,process,event, build_p_stack=True):
-        if process['comm']=='swapper' and process['pid']==0:
+        if process['type']=="user_process" and process['pid']==0:
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
             process['end_ts'].append(event.timestamp)
@@ -317,7 +317,7 @@ class tcProject(HasTraits):
 
 
     def generic_process_end(self,process,event, build_p_stack=True):
-        if process['comm']=='swapper' and process['pid']==0:
+        if process['type']=="user_process" and process['pid']==0:
             return # ignore swapper event
         if len(process['start_ts'])>len(process['end_ts']):
             process['end_ts'].append(event.timestamp)
