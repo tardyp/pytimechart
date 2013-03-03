@@ -94,9 +94,9 @@ def parse_ftrace(filename,callback):
     last_percent = 0
     # the base regular expressions
     event_re = re.compile(
-        r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\]\s+([0-9.]+): ([^:]*): (.*)')
+        r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\][^:]*\s+([0-9.]+): ([^:]*): (.*)')
     function_re = re.compile(
-        r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\]\s+([0-9.]+): (.*) <-(.*)')
+        r'\s*(.+)-([0-9]+)\s+\[([0-9]+)\][^:]*\s+([0-9.]+): (.*) <-(.*)')
     last_timestamp = 0
     linenumber = 0
     for line in fid:
