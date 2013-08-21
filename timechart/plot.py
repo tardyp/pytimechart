@@ -3,7 +3,7 @@ from enthought.chaco.api import ArrayDataSource, DataRange1D, LinearMapper,BarPl
                                  add_default_grids,VPlotContainer
 from enthought.chaco.tools.api import PanTool, ZoomTool,RangeSelection,RangeSelectionOverlay
 from enthought.chaco.api import create_line_plot
-from enthought.traits.ui.api import View,Item,VGroup,HGroup
+from enthought.traits.ui.api import View,Item,VGroup,HGroup, CodeEditor
 from enthought.traits.api import HasTraits,DelegatesTo,Trait
 from enthought.traits.api import Float, Instance, Int,Bool,Str,Unicode,Enum,Button
 from enthought.chaco.api import AbstractOverlay, BaseXYPlot
@@ -76,7 +76,7 @@ class TextView(HasTraits):
         self.trait_view().title = title
 
     traits_view = View(
-        Item('text',style="custom",show_label=False),
+        Item('text',style="readonly",show_label=False, editor=CodeEditor()),
         HGroup(
             Item('save'),
             show_labels = False),
