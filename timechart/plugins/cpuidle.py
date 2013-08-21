@@ -93,12 +93,13 @@ cpufreq_bg		#ffddee
         cpu_idle.stop_cpu_idle(self, event)
     @staticmethod
     def do_all_events(self,event):
-        event.cpuid = event.common_cpu
+        if "cpuid" not in event.__dict__:
+            event.cpuid = event.common_cpu
         cpu_idle.stop_cpu_idle(self, event)
 
     @staticmethod
     def do_event_cpu_frequency(self,event):
-        self.ensure_cpu_allocated(event.common_cpu)
+        self.ensure_cpu_allocated(event.cpuid)
         tc = self.tmp_p_states[event.cpuid]
         if len(tc['types']) > 0:
             name = tc['types'][-1]
@@ -109,10 +110,10 @@ cpufreq_bg		#ffddee
         name = event.state
         process = self.generic_find_process(0,"cpu%d/freq:%s"%(event.cpuid,name),"cpufreq")
         self.generic_process_start(process,event, build_p_stack=False)
+
     @staticmethod
     def do_event_power_frequency(self,event):
         if event.type==2:# p_state
-            event.cpuid = event.common_cpu
             cpu_idle.do_event_cpu_frequency(self, event)
 
 plugin_register(cpu_idle)

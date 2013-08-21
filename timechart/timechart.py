@@ -3,6 +3,7 @@
 import sys
 try:
     from enthought.etsconfig.api import ETSConfig
+    from enthought.pyface.api import GUI
 except:
     print >>sys.stderr, "did you install python-chaco?"
     print >>sys.stderr, "maybe you did install chaco>=4, then you will need to install the package etsproxy"
@@ -42,7 +43,6 @@ if os.name=="posix":
     except: # this code will throw exception on ETS4, which has actually fixed fontmanager
         pass
 
-from enthought.pyface.api import GUI
 from window import open_file
 
 
