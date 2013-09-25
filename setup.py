@@ -53,7 +53,8 @@ if __name__ == "__main__":
         author = "Pierre Tardy",
         author_email = "tardyp@gmail.com",
         install_requires = [
-            'Chaco >= 3.0', # you should install that via distro rather than pypi..
+            'Chaco >= 4.0', # you should install that via distro rather than pypi..
+            'etsproxy'
             # 'pyliblzma >= 0.5' # not really mandatory
         ],
         license = "BSD",

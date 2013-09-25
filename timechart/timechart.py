@@ -1,53 +1,54 @@
 #!/usr/bin/python
 #------------------------------------------------------------------------------
 import sys
-try:
-    from enthought.etsconfig.api import ETSConfig
-    from enthought.pyface.api import GUI
-except:
-    print >>sys.stderr, "did you install python-chaco?"
-    print >>sys.stderr, "maybe you did install chaco>=4, then you will need to install the package etsproxy"
-    print >>sys.stderr, "sudo easy_install etsproxy"
-    sys.exit(1)
-
-# select the toolkit we want to use
-# WX is more stable for now
-#ETSConfig.toolkit = 'qt4'
-ETSConfig.toolkit = 'wx'
-
-# workaround bad bg color in ubuntu, with Ambiance theme
-# wxgtk (or traitsGUI, I dont know) looks like using the menu's bgcolor 
-# for all custom widgets bg colors. :-(
-
-if ETSConfig.toolkit == 'wx':
-    import wx, os
-    if "gtk2" in wx.PlatformInfo:
-        from gtk import rc_parse, MenuBar
-        m = MenuBar()
-        if m.rc_get_style().bg[0].red_float < 0.5: # only customize dark bg
-            rc_parse(os.path.join(os.path.dirname(__file__),"images/gtkrc"))
-        m.destroy()
-
-# workaround bug in kiva's font manager that fails to find a correct default font on linux
-if os.name=="posix":
-    import warnings
-    def devnull(*args):
-        pass
-    warnings.showwarning = devnull
-    from  enthought.kiva.fonttools.font_manager import fontManager, FontProperties
-    try:
-        font = FontProperties()
-        font.set_name("DejaVu Sans")
-        fontManager.defaultFont = fontManager.findfont(font)
-        fontManager.warnings = None
-    except: # this code will throw exception on ETS4, which has actually fixed fontmanager
-        pass
-
-from window import open_file
-
-
 
 def main():
+    try:
+        from enthought.etsconfig.api import ETSConfig
+        from enthought.pyface.api import GUI
+    except:
+        print >>sys.stderr, "did you install python-chaco?"
+        print >>sys.stderr, "maybe you did install chaco>=4, then you will need to install the package etsproxy"
+        print >>sys.stderr, "sudo easy_install etsproxy"
+        raise
+
+    # select the toolkit we want to use
+    # WX is more stable for now
+    #ETSConfig.toolkit = 'qt4'
+    ETSConfig.toolkit = 'wx'
+
+    # workaround bad bg color in ubuntu, with Ambiance theme
+    # wxgtk (or traitsGUI, I dont know) looks like using the menu's bgcolor 
+    # for all custom widgets bg colors. :-(
+
+    if ETSConfig.toolkit == 'wx':
+        import wx, os
+        if "gtk2" in wx.PlatformInfo:
+            from gtk import rc_parse, MenuBar
+            m = MenuBar()
+            if m.rc_get_style().bg[0].red_float < 0.5: # only customize dark bg
+                rc_parse(os.path.join(os.path.dirname(__file__),"images/gtkrc"))
+            m.destroy()
+
+    # workaround bug in kiva's font manager that fails to find a correct default font on linux
+    if os.name=="posix":
+        import warnings
+        def devnull(*args):
+            pass
+        warnings.showwarning = devnull
+        from  enthought.kiva.fonttools.font_manager import fontManager, FontProperties
+        try:
+            font = FontProperties()
+            font.set_name("DejaVu Sans")
+            fontManager.defaultFont = fontManager.findfont(font)
+            fontManager.warnings = None
+        except: # this code will throw exception on ETS4, which has actually fixed fontmanager
+            pass
+
+    from window import open_file
+
+
+
     import optparse
     parser = optparse.OptionParser(usage="""\
 %prog [options] [trace.txt|trace.txt.gz|trace.txt.lzma|trace.dat]
@@ -72,27 +73,6 @@ pytimechart - Fast graphical exploration and visualisation for linux kernel trac
     else:
         gui.start_event_loop()
 
-# used for profiling, and regression tests
-def just_open():
-    import optparse
-    parser = optparse.OptionParser(usage="""\
-%prog [options] [trace.txt|trace.txt.gz|trace.txt.lzma|trace.dat]
-
-pytimechart_parse_test - just test parsing backend...""")
-    parser.add_option("-p", "--prof", dest="prof", action="store_true",
-                      help="activate profiling",
-                      default=False)
-    (options, args) = parser.parse_args()
-    if len(args) > 0:
-        fn = args[0]
-    else:
-        return
-    if options.prof:
-        import cProfile
-        dict = {"open_file":open_file,"fn":fn}
-        cProfile.runctx('open_file(fn)',dict,dict,'timechart.prof')
-    else:
-        open_file(fn)
 
 if __name__ == '__main__':
     main()

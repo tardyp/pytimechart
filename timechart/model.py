@@ -10,7 +10,7 @@ from enthought.traits.api import HasTraits, Instance, Str, Float,Delegate,\
 from enthought.traits.ui.api import Group, HGroup, Item, View, spring, Handler,VGroup,TableEditor
 from enthought.enable.colors import ColorTrait
 from enthought.pyface.image_resource import ImageResource
-from enthought.pyface.api import ProgressDialog
+from .progress import ProgressDialog
 
 from process_table import process_table_editor
 import colors

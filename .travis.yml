@@ -1,0 +1,15 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+# command to install dependencies
+before_install:
+  - lsb_release -a
+  - uname -a
+  - sudo apt-get -qq update
+  - sudo apt-get build-dep python-chaco python-enable python-traits python-traitsbackendwx
+  - sudo apt-get install python-chaco xvfb
+install:
+  - pip install . --use-mirrors
+# command to run tests
+script: xvfb-run nosetests

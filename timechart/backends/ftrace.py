@@ -1,7 +1,7 @@
 import re
 import sys,os
 from timechart.plugin import get_plugins_additional_ftrace_parsers
-from enthought.pyface.api import ProgressDialog
+from timechart.progress import ProgressDialog
 
 # take the TP_printk from the /include/trace/events dir
 # syntax is event_name, printk, printk_args...

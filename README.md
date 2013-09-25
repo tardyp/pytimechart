@@ -1,4 +1,5 @@
-# PyTimechart
+# PyTimechart [![Build Status](https://travis-ci.org/tardyp/pytimechart.png?branch=master)](https://travis-ci.org/tardyp/pytimechart)
+
 
 a tool to display ftrace (or perf) traces
 

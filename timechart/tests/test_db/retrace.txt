@@ -1,0 +1,34 @@
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 108/108   #P:2
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+     kworker/0:2-5495  [000] ...1   995.439240: cpu_frequency: state=1850000 cpu_id=0
+     kworker/0:2-5495  [000] ...1   995.439301: cpu_frequency: state=1850000 cpu_id=1
+ ndroid.launcher-2560  [001] ...1   995.479065: u8500_set_ape_opp: ape_opp=2
+ ndroid.launcher-2560  [001] ...1   995.479523: u8500_set_ddr_opp: ddr_opp=0
+     kworker/1:0-5973  [001] ...1   995.558777: cpu_frequency: state=800000 cpu_id=0
+     kworker/1:0-5973  [001] ...1   995.558807: cpu_frequency: state=800000 cpu_id=1
+     kworker/0:2-5495  [000] ...1   995.598877: cpu_frequency: state=1850000 cpu_id=0
+     kworker/0:2-5495  [000] ...1   995.598907: cpu_frequency: state=1850000 cpu_id=1
+     kworker/0:2-5495  [000] ...1   995.618774: cpu_frequency: state=1200000 cpu_id=0
+     kworker/0:2-5495  [000] ...1   995.618805: cpu_frequency: state=1200000 cpu_id=1
+     kworker/1:1-30    [001] ...1   995.638641: cpu_frequency: state=800000 cpu_id=0
+     kworker/1:1-30    [001] ...1   995.638672: cpu_frequency: state=800000 cpu_id=1
+     kworker/1:1-30    [001] ...1   995.658752: cpu_frequency: state=400000 cpu_id=0
+     kworker/1:1-30    [001] ...1   995.658813: cpu_frequency: state=400000 cpu_id=1
+     kworker/1:1-30    [001] ...1   995.799042: cpu_frequency: state=1850000 cpu_id=0
+     kworker/1:1-30    [001] ...1   995.799042: cpu_frequency: state=1850000 cpu_id=1
+     kworker/0:2-5495  [000] ...1   995.818787: cpu_frequency: state=800000 cpu_id=0
+     kworker/0:2-5495  [000] ...1   995.818787: cpu_frequency: state=800000 cpu_id=1
+     kworker/1:1-30    [001] ...1   995.828888: cpu_frequency: state=400000 cpu_id=0
+     kworker/1:1-30    [001] ...1   995.828918: cpu_frequency: state=400000 cpu_id=1
+     kworker/0:2-5495  [000] ...1   995.899658: cpu_frequency: state=1850000 cpu_id=0
+     kworker/0:2-5495  [000] ...1   995.899689: cpu_frequency: state=1850000 cpu_id=1
+

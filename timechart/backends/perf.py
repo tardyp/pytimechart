@@ -1,6 +1,5 @@
 import os
 from timechart.model import tcProject
-from timechart.window import tcWindow
 class Event():
     def __init__(self,name,kw):
         self.__dict__=kw
@@ -14,6 +13,7 @@ def trace_begin():
     proj = tcProject()
     proj.start_parsing(get_partial_text)
 def trace_end():
+    from timechart.window import tcWindow
     proj.finish_parsing()
     # Create and open the main window.
     window = tcWindow(project = proj)
