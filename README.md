@@ -1,5 +1,5 @@
 <h1>
-  Project is archived and unmaintained. Please use https://ui.perfetto.dev/#!/
+  Project is archived and unmaintained. Please use [perfetto](https://ui.perfetto.dev) from chromium project
 </h1>
 
 # PyTimechart [![Build Status](https://travis-ci.org/tardyp/pytimechart.png?branch=master)](https://travis-ci.org/tardyp/pytimechart)
