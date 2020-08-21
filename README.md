@@ -1,3 +1,7 @@
+<h1>
+  Project is archived and unmaintained. Please use https://ui.perfetto.dev/#!/
+</h1>
+
 # PyTimechart [![Build Status](https://travis-ci.org/tardyp/pytimechart.png?branch=master)](https://travis-ci.org/tardyp/pytimechart)
 
 
